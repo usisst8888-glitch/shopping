@@ -14,7 +14,7 @@ export async function CategoriesSection() {
   const supabase = await createClient()
   const { data: categories } = await supabase
     .from('categories')
-    .select('id, name, image_url')
+    .select('id, name, slug, image_url')
     .eq('is_main', true)
     .order('sort_order')
 
@@ -29,7 +29,7 @@ export async function CategoriesSection() {
         {categories.map((cat, i) => (
           <Link
             key={cat.id}
-            href={`/category/${cat.id}`}
+            href={`/category/${cat.slug || cat.id}`}
             className={`group relative flex h-32 items-center justify-center overflow-hidden rounded-xl ${
               cat.image_url ? '' : `bg-gradient-to-br ${gradients[i % gradients.length]}`
             } text-sm font-medium transition hover:scale-105`}

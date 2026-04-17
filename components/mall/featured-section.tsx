@@ -5,7 +5,7 @@ export async function FeaturedSection() {
   const supabase = await createClient()
   const { data: products } = await supabase
     .from('products')
-    .select('id, name, price, thumbnail_url')
+    .select('id, name, slug, price, thumbnail_url')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(8)
@@ -22,7 +22,7 @@ export async function FeaturedSection() {
           {products.map((product) => (
             <Link
               key={product.id}
-              href={`/product/${product.id}`}
+              href={`/product/${product.slug || product.id}`}
               className="group overflow-hidden rounded-xl bg-white shadow-sm transition hover:shadow-md"
             >
               <div className="flex h-48 items-center justify-center bg-zinc-100">

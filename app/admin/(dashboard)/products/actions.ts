@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { generateSlug } from '@/lib/slug'
 
 export type Product = {
   id: string
@@ -150,10 +151,21 @@ export async function createProduct(formData: FormData) {
       .filter((v): v is string => !!v)
   }
 
+  // slug 생성 (중복 시 숫자 추가)
+  let slug = generateSlug(name)
+  const { data: existing } = await supabase
+    .from('products')
+    .select('slug')
+    .like('slug', `${slug}%`)
+  if (existing && existing.length > 0) {
+    slug = `${slug}-${existing.length + 1}`
+  }
+
   const { data: product, error } = await supabase
     .from('products')
     .insert({
       name,
+      slug,
       summary,
       description,
       price,
@@ -227,10 +239,31 @@ export async function updateProduct(id: string, formData: FormData) {
       .filter((v): v is string => !!v)
   }
 
+  // 기존 상품의 slug 확인, 없으면 생성
+  const { data: current } = await supabase
+    .from('products')
+    .select('slug, name')
+    .eq('id', id)
+    .single()
+
+  let slug = current?.slug
+  if (!slug || current?.name !== name) {
+    slug = generateSlug(name)
+    const { data: existing } = await supabase
+      .from('products')
+      .select('slug')
+      .like('slug', `${slug}%`)
+      .neq('id', id)
+    if (existing && existing.length > 0) {
+      slug = `${slug}-${existing.length + 1}`
+    }
+  }
+
   const { error } = await supabase
     .from('products')
     .update({
       name,
+      slug,
       summary,
       description,
       price,

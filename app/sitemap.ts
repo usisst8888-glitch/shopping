@@ -11,13 +11,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 상품 목록
   const { data: products } = await supabase
     .from('products')
-    .select('id, updated_at')
+    .select('id, slug, updated_at')
     .eq('is_active', true)
 
   // 카테고리 목록
   const { data: categories } = await supabase
     .from('categories')
-    .select('id')
+    .select('id, slug')
 
   const entries: MetadataRoute.Sitemap = [
     {
@@ -31,7 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 카테고리 페이지
   for (const cat of categories ?? []) {
     entries.push({
-      url: `${baseUrl}/category/${cat.id}`,
+      url: `${baseUrl}/category/${cat.slug || cat.id}`,
       changeFrequency: 'weekly',
       priority: 0.8,
     })
@@ -40,7 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 상품 페이지
   for (const product of products ?? []) {
     entries.push({
-      url: `${baseUrl}/product/${product.id}`,
+      url: `${baseUrl}/product/${product.slug || product.id}`,
       lastModified: product.updated_at ? new Date(product.updated_at) : new Date(),
       changeFrequency: 'weekly',
       priority: 0.6,

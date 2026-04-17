@@ -11,16 +11,18 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
-  const { data } = await supabase
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  const { data: product } = await supabase
     .from('products')
-    .select('name, summary, thumbnail_url')
-    .eq('id', id)
+    .select('name, slug, summary, thumbnail_url')
+    .eq(isUuid ? 'id' : 'slug', id)
     .single()
 
   const site = await getSiteConfig()
-  const canonicalUrl = `https://${site.domain}/product/${id}`
-  const title = data?.name ?? '상품'
-  const description = data?.summary?.replace(/<[^>]*>/g, '').slice(0, 160) ?? ''
+  const slug = product?.slug || id
+  const canonicalUrl = `https://${site.domain}/product/${slug}`
+  const title = product?.name ?? '상품'
+  const description = product?.summary?.replace(/<[^>]*>/g, '').slice(0, 160) ?? ''
 
   return {
     title,
@@ -32,7 +34,7 @@ export async function generateMetadata({
       title,
       description,
       url: canonicalUrl,
-      ...(data?.thumbnail_url ? { images: [{ url: data.thumbnail_url }] } : {}),
+      ...(product?.thumbnail_url ? { images: [{ url: product.thumbnail_url }] } : {}),
     },
   }
 }
@@ -45,10 +47,11 @@ export default async function ProductPage({
   const { id } = await params
   const supabase = await createClient()
 
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
   const { data: product } = await supabase
     .from('products')
     .select('*')
-    .eq('id', id)
+    .eq(isUuid ? 'id' : 'slug', id)
     .eq('is_active', true)
     .single()
 
@@ -57,14 +60,14 @@ export default async function ProductPage({
   const { data: relations } = await supabase
     .from('product_categories')
     .select('category_id')
-    .eq('product_id', id)
+    .eq('product_id', product.id)
 
-  let categories: { id: string; name: string }[] = []
+  let categories: { id: string; name: string; slug: string | null }[] = []
   if (relations && relations.length > 0) {
     const catIds = relations.map((r) => r.category_id)
     const { data } = await supabase
       .from('categories')
-      .select('id, name')
+      .select('id, name, slug')
       .in('id', catIds)
     categories = data ?? []
   }
@@ -119,7 +122,7 @@ export default async function ProductPage({
               {categories.map((cat) => (
                 <Link
                   key={cat.id}
-                  href={`/category/${cat.id}`}
+                  href={`/category/${cat.slug || cat.id}`}
                   className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-500 hover:bg-zinc-200"
                 >
                   {cat.name}

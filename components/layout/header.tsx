@@ -28,7 +28,7 @@ export async function Header({
 
   const { data: categories } = await supabase
     .from('categories')
-    .select('id, name, parent_id, level')
+    .select('id, name, slug, parent_id, level')
     .lte('level', 2)
     .order('level')
     .order('sort_order')

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { generateSlug } from '@/lib/slug'
 
 export type Category = {
   id: string
@@ -85,8 +86,18 @@ export async function createCategory(formData: FormData) {
     }
   }
 
+  let slug = generateSlug(name)
+  const { data: existingSlugs } = await supabase
+    .from('categories')
+    .select('slug')
+    .like('slug', `${slug}%`)
+  if (existingSlugs && existingSlugs.length > 0) {
+    slug = `${slug}-${existingSlugs.length + 1}`
+  }
+
   const { error } = await supabase.from('categories').insert({
     name,
+    slug,
     category_no: categoryNo,
     parent_id: parentId || null,
     level,
@@ -113,9 +124,29 @@ export async function updateCategory(formData: FormData) {
   const imageUrl = (formData.get('image_url') as string)?.trim() || null
   const isMain = formData.get('is_main') === 'true'
 
+  // slug 업데이트
+  const { data: current } = await supabase
+    .from('categories')
+    .select('slug, name')
+    .eq('id', id)
+    .single()
+
+  let slug = current?.slug
+  if (!slug || current?.name !== name) {
+    slug = generateSlug(name)
+    const { data: existingSlugs } = await supabase
+      .from('categories')
+      .select('slug')
+      .like('slug', `${slug}%`)
+      .neq('id', id)
+    if (existingSlugs && existingSlugs.length > 0) {
+      slug = `${slug}-${existingSlugs.length + 1}`
+    }
+  }
+
   const { error } = await supabase
     .from('categories')
-    .update({ name, category_no: categoryNo, sort_order: sortOrder, image_url: imageUrl, is_main: isMain })
+    .update({ name, slug, category_no: categoryNo, sort_order: sortOrder, image_url: imageUrl, is_main: isMain })
     .eq('id', id)
 
   if (error) {

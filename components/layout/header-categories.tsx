@@ -6,6 +6,7 @@ import Link from 'next/link'
 type Category = {
   id: string
   name: string
+  slug: string | null
   parent_id: string | null
   level: number
 }
@@ -35,7 +36,7 @@ export function HeaderCategories({ categories }: { categories: Category[] }) {
               return (
                 <div key={cat.id} className="min-w-[120px]">
                   <Link
-                    href={`/category/${cat.id}`}
+                    href={`/category/${cat.slug || cat.id}`}
                     className="block text-sm font-semibold text-zinc-900 hover:text-zinc-600"
                     onClick={() => setOpen(false)}
                   >
@@ -46,7 +47,7 @@ export function HeaderCategories({ categories }: { categories: Category[] }) {
                       {children.map((child) => (
                         <Link
                           key={child.id}
-                          href={`/category/${child.id}`}
+                          href={`/category/${child.slug || child.id}`}
                           className="block text-xs text-zinc-500 hover:text-zinc-900"
                           onClick={() => setOpen(false)}
                         >
