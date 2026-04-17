@@ -3,6 +3,7 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
+import TextAlign from '@tiptap/extension-text-align'
 import { useRef } from 'react'
 import { uploadImage } from '@/app/admin/(dashboard)/products/actions'
 
@@ -22,6 +23,9 @@ export function TiptapEditor({
     extensions: [
       StarterKit,
       Image.configure({ inline: false }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -89,6 +93,27 @@ export function TiptapEditor({
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
         >
           H3
+        </ToolButton>
+
+        <div className="mx-1 w-px bg-zinc-200" />
+
+        <ToolButton
+          active={editor.isActive({ textAlign: 'left' })}
+          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+        >
+          좌
+        </ToolButton>
+        <ToolButton
+          active={editor.isActive({ textAlign: 'center' })}
+          onClick={() => editor.chain().focus().setTextAlign('center').run()}
+        >
+          중
+        </ToolButton>
+        <ToolButton
+          active={editor.isActive({ textAlign: 'right' })}
+          onClick={() => editor.chain().focus().setTextAlign('right').run()}
+        >
+          우
         </ToolButton>
 
         <div className="mx-1 w-px bg-zinc-200" />
