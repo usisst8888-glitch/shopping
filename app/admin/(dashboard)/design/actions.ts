@@ -21,6 +21,17 @@ export async function getDesign(siteId: string) {
 export async function upsertDesign(siteId: string, formData: FormData) {
   const supabase = await createClient()
 
+  // 로고 이미지 업로드
+  let logoUrl: string | null | undefined = undefined
+  const logoFile = formData.get('logo_image') as File
+  if (logoFile && logoFile.size > 0) {
+    const logoUpload = await uploadToCloudflare(logoFile)
+    if (logoUpload.error) return { error: logoUpload.error }
+    logoUrl = logoUpload.url ?? null
+  }
+  const removeLogo = formData.get('remove_logo') === 'true'
+  if (removeLogo) logoUrl = null
+
   const heroTitle = (formData.get('hero_title') as string)?.trim() || null
   const heroSubtitle =
     (formData.get('hero_subtitle') as string)?.trim() || null
@@ -52,20 +63,26 @@ export async function upsertDesign(siteId: string, formData: FormData) {
     brandsList = []
   }
 
+  const upsertData: Record<string, unknown> = {
+    site_id: siteId,
+    hero_title: heroTitle,
+    hero_subtitle: heroSubtitle,
+    hero_cta_text: heroCtaText,
+    hero_cta_link: heroCtaLink,
+    hero_bg_color: heroBgColor,
+    nav_items: navItems,
+    footer_phone: footerPhone,
+    footer_hours: footerHours,
+    footer_lunch: footerLunch,
+    brands_list: brandsList,
+  }
+
+  if (logoUrl !== undefined) {
+    upsertData.logo_url = logoUrl
+  }
+
   const { error } = await supabase.from('site_design').upsert(
-    {
-      site_id: siteId,
-      hero_title: heroTitle,
-      hero_subtitle: heroSubtitle,
-      hero_cta_text: heroCtaText,
-      hero_cta_link: heroCtaLink,
-      hero_bg_color: heroBgColor,
-      nav_items: navItems,
-      footer_phone: footerPhone,
-      footer_hours: footerHours,
-      footer_lunch: footerLunch,
-      brands_list: brandsList,
-    },
+    upsertData,
     { onConflict: 'site_id' }
   )
 

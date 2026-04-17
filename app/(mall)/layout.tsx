@@ -16,7 +16,7 @@ export default async function MallLayout({
 
   return (
     <>
-      <Header siteName={site.name} navItems={site.design?.nav_items} />
+      <Header siteName={site.name} navItems={site.design?.nav_items} logoUrl={site.design?.logo_url} />
       <PageTracker siteId={site.id} />
       <main>{children}</main>
       <Footer

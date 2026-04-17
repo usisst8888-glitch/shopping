@@ -17,6 +17,25 @@ export function DesignManager({
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  // 로고
+  const [logoPreview, setLogoPreview] = useState<string | null>(design?.logo_url ?? null)
+  const [removeLogo, setRemoveLogo] = useState(false)
+
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) {
+      setLogoPreview(URL.createObjectURL(file))
+      setRemoveLogo(false)
+    }
+  }
+
+  function handleRemoveLogo() {
+    setLogoPreview(null)
+    setRemoveLogo(true)
+    const input = document.getElementById('logo_image') as HTMLInputElement
+    if (input) input.value = ''
+  }
+
   // 네비게이션 항목
   const [navItems, setNavItems] = useState<NavItem[]>(
     design?.nav_items ?? [
@@ -68,6 +87,7 @@ export function DesignManager({
     const formData = new FormData(e.currentTarget)
     formData.set('nav_items', JSON.stringify(navItems.filter((n) => n.label.trim())))
     formData.set('brands_list', JSON.stringify(brandsList))
+    if (removeLogo) formData.set('remove_logo', 'true')
 
     const result = await upsertDesign(siteId, formData)
 
@@ -93,6 +113,55 @@ export function DesignManager({
           디자인 설정이 저장되었습니다.
         </div>
       )}
+
+      {/* 로고 설정 */}
+      <div className="rounded-xl bg-white p-6 shadow-sm">
+        <h3 className="mb-4 text-lg font-semibold text-zinc-900">로고 설정</h3>
+        <p className="mb-4 text-sm text-zinc-500">
+          로고 이미지를 등록하면 헤더에 사이트명 대신 로고가 표시됩니다.
+        </p>
+
+        <div className="flex items-start gap-6">
+          {logoPreview ? (
+            <div className="relative">
+              <img
+                src={logoPreview}
+                alt="로고 미리보기"
+                className="h-16 w-auto max-w-[200px] rounded-lg border border-zinc-200 object-contain p-2"
+              />
+              <button
+                type="button"
+                onClick={handleRemoveLogo}
+                className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white hover:bg-red-600"
+              >
+                &times;
+              </button>
+            </div>
+          ) : (
+            <div className="flex h-16 w-[200px] items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 text-sm text-zinc-400">
+              로고 없음
+            </div>
+          )}
+
+          <div>
+            <label
+              htmlFor="logo_image"
+              className="inline-block cursor-pointer rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200"
+            >
+              {logoPreview ? '로고 변경' : '로고 업로드'}
+            </label>
+            <input
+              id="logo_image"
+              name="logo_image"
+              type="file"
+              accept="image/*"
+              onChange={handleLogoChange}
+              className="hidden"
+            />
+            <p className="mt-1 text-xs text-zinc-400">PNG, SVG 권장 (투명 배경)</p>
+          </div>
+        </div>
+      </div>
 
       {/* 히어로 기본 설정 */}
       <div className="rounded-xl bg-white p-6 shadow-sm">

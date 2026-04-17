@@ -56,6 +56,7 @@ export type LayoutSection =
 export type SiteDesign = {
   id: string
   site_id: string
+  logo_url: string | null
   hero_title: string | null
   hero_subtitle: string | null
   hero_cta_text: string
