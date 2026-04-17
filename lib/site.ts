@@ -21,7 +21,7 @@ export type SiteConfigFull = SiteConfig & {
 const FALLBACK_SITE: SiteConfig = {
   id: '',
   domain: 'localhost:3000',
-  name: 'LUCKYPLE',
+  name: 'LUNAVALLEY',
   description: '명품 레플리카 전문 사이트',
   logo_url: null,
   footer_info: {},

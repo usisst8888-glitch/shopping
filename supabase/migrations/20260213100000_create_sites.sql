@@ -18,4 +18,4 @@ CREATE POLICY "사이트 관리" ON public.sites FOR ALL USING (
 
 -- 기본 사이트 데이터
 INSERT INTO public.sites (domain, name, description) VALUES
-  ('localhost:3000', 'LUCKYPLE', '명품 레플리카 전문 사이트');
+  ('localhost:3000', 'LUNAVALLEY', '명품 레플리카 전문 사이트');
