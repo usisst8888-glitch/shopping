@@ -1,21 +1,40 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { getSiteConfig } from '@/lib/site'
+import type { Metadata } from 'next'
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>
-}) {
+}): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
   const { data } = await supabase
     .from('products')
-    .select('name')
+    .select('name, summary, thumbnail_url')
     .eq('id', id)
     .single()
 
-  return { title: data?.name ?? '상품' }
+  const site = await getSiteConfig()
+  const canonicalUrl = `https://${site.domain}/product/${id}`
+  const title = data?.name ?? '상품'
+  const description = data?.summary?.replace(/<[^>]*>/g, '').slice(0, 160) ?? ''
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      ...(data?.thumbnail_url ? { images: [{ url: data.thumbnail_url }] } : {}),
+    },
+  }
 }
 
 export default async function ProductPage({

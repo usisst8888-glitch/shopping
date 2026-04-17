@@ -1,12 +1,14 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getSiteConfig } from '@/lib/site'
+import type { Metadata } from 'next'
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>
-}) {
+}): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
   const { data: category } = await supabase
@@ -15,7 +17,20 @@ export async function generateMetadata({
     .eq('id', id)
     .single()
 
-  return { title: category?.name ?? '카테고리' }
+  const site = await getSiteConfig()
+  const title = category?.name ?? '카테고리'
+  const canonicalUrl = `https://${site.domain}/category/${id}`
+
+  return {
+    title,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title,
+      url: canonicalUrl,
+    },
+  }
 }
 
 export default async function CategoryPage({
