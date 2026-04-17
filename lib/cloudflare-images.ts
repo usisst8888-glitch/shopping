@@ -1,0 +1,32 @@
+export async function uploadToCloudflare(file: File): Promise<{ url?: string; error?: string }> {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN
+  const accountHash = process.env.CLOUDFLARE_ACCOUNT_HASH
+
+  if (!accountId || !apiToken || !accountHash) {
+    return { error: 'Cloudflare 설정이 없습니다.' }
+  }
+
+  const cfFormData = new FormData()
+  cfFormData.append('file', file)
+
+  const res = await fetch(
+    `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiToken}` },
+      body: cfFormData,
+    }
+  )
+
+  const data = await res.json()
+
+  if (!data.success) {
+    return { error: '이미지 업로드 중 오류가 발생했습니다.' }
+  }
+
+  const imageId = data.result.id
+  const url = `https://imagedelivery.net/${accountHash}/${imageId}/public`
+
+  return { url }
+}
