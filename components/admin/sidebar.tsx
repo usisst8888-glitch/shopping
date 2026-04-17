@@ -10,6 +10,7 @@ const navItems = [
   { href: '/admin/design', label: '디자인 관리' },
   { href: '/admin/categories', label: '카테고리 관리' },
   { href: '/admin/products', label: '상품 관리' },
+  { href: '/admin/seo', label: 'SEO 설정' },
   { href: '/admin/settings', label: '설정' },
 ]
 
