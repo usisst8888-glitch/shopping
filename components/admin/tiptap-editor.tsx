@@ -26,7 +26,7 @@ export function TiptapEditor({
       StarterKit,
       Image.configure({ inline: false }),
       TextAlign.configure({
-        types: ['heading', 'paragraph'],
+        types: ['heading', 'paragraph', 'image'],
       }),
     ],
     content,

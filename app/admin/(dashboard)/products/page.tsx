@@ -262,9 +262,8 @@ export default async function ProductsPage({
                     <td className="px-6 py-3 text-center">
                       <ProductActions
                         productId={product.id}
+                        productSlug={(product as any).slug}
                         productName={product.name}
-                        currentCategories={product.categories ?? []}
-                        allCategories={categories}
                       />
                     </td>
                   </tr>

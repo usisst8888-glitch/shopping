@@ -7,6 +7,7 @@ import { generateSlug } from '@/lib/slug'
 export type Product = {
   id: string
   name: string
+  slug: string | null
   summary: string | null
   description: string | null
   price: number
