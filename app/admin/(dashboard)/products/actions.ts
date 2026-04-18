@@ -291,6 +291,45 @@ export async function updateProduct(id: string, formData: FormData) {
   return { success: true }
 }
 
+export async function moveProductCategories(productId: string, categoryIds: string[]) {
+  const supabase = await createClient()
+
+  // 기존 카테고리 연결 삭제
+  await supabase.from('product_categories').delete().eq('product_id', productId)
+
+  // 새 카테고리 연결
+  if (categoryIds.length > 0) {
+    const relations = categoryIds.map((categoryId) => ({
+      product_id: productId,
+      category_id: categoryId,
+    }))
+    await supabase.from('product_categories').insert(relations)
+
+    // category_nos 업데이트
+    const { data: cats } = await supabase
+      .from('categories')
+      .select('category_no')
+      .in('id', categoryIds)
+      .not('category_no', 'is', null)
+    const categoryNos = (cats ?? [])
+      .map((c) => c.category_no)
+      .filter((v): v is string => !!v)
+
+    await supabase
+      .from('products')
+      .update({ category_nos: categoryNos })
+      .eq('id', productId)
+  } else {
+    await supabase
+      .from('products')
+      .update({ category_nos: [] })
+      .eq('id', productId)
+  }
+
+  revalidatePath('/admin/products')
+  return { success: true }
+}
+
 export async function deleteProduct(id: string) {
   const supabase = await createClient()
 

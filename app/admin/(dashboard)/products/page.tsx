@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { getProducts, deleteProduct, getAllCategoriesFlat } from './actions'
+import { getProducts, getAllCategoriesFlat } from './actions'
+import { ProductActions } from '@/components/admin/product-actions'
 
 export const metadata = { title: '상품 관리' }
 
@@ -259,27 +260,12 @@ export default async function ProductsPage({
                       </span>
                     </td>
                     <td className="px-6 py-3 text-center">
-                      <div className="flex items-center justify-center gap-3">
-                        <Link
-                          href={`/admin/products/${product.id}/edit`}
-                          className="text-xs text-blue-600 hover:underline"
-                        >
-                          수정
-                        </Link>
-                        <form
-                          action={async () => {
-                            'use server'
-                            await deleteProduct(product.id)
-                          }}
-                        >
-                          <button
-                            type="submit"
-                            className="text-xs text-red-500 hover:underline"
-                          >
-                            삭제
-                          </button>
-                        </form>
-                      </div>
+                      <ProductActions
+                        productId={product.id}
+                        productName={product.name}
+                        currentCategories={product.categories ?? []}
+                        allCategories={categories}
+                      />
                     </td>
                   </tr>
                 ))}
