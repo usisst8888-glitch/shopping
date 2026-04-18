@@ -5,7 +5,6 @@ import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import TextAlign from '@tiptap/extension-text-align'
 import { useRef, useState, useCallback } from 'react'
-import { uploadImage } from '@/app/admin/(dashboard)/products/actions'
 
 export function TiptapEditor({
   content,
@@ -73,9 +72,13 @@ export function TiptapEditor({
         const formData = new FormData()
         formData.set('file', file)
 
-        const result = await uploadImage(formData)
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        })
+        const result = await res.json()
+
         if (result.error) {
-          console.error('업로드 에러:', result.error)
           alert('이미지 업로드 실패: ' + result.error)
           continue
         }
