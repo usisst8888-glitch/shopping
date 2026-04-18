@@ -9,7 +9,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>
 }): Promise<Metadata> {
-  const { id } = await params
+  const { id: rawId } = await params
+  const id = decodeURIComponent(rawId)
   const supabase = await createClient()
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
   const { data: product } = await supabase
@@ -44,7 +45,8 @@ export default async function ProductPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const { id } = await params
+  const { id: rawId } = await params
+  const id = decodeURIComponent(rawId)
   const supabase = await createClient()
 
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
