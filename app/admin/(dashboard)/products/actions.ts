@@ -123,9 +123,16 @@ export async function getAllCategoriesFlat() {
 export async function uploadImage(formData: FormData) {
   const file = formData.get('file') as File
   if (!file) return { error: '파일이 없습니다.' }
+  if (file.size === 0) return { error: '빈 파일입니다.' }
 
-  const { uploadToCloudflare } = await import('@/lib/cloudflare-images')
-  return uploadToCloudflare(file)
+  try {
+    const { uploadToCloudflare } = await import('@/lib/cloudflare-images')
+    const result = await uploadToCloudflare(file)
+    return result
+  } catch (err) {
+    console.error('uploadImage 에러:', err)
+    return { error: '이미지 업로드 중 서버 오류가 발생했습니다.' }
+  }
 }
 
 export async function createProduct(formData: FormData) {

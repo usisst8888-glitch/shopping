@@ -67,29 +67,30 @@ export function TiptapEditor({
 
     setUploading(true)
 
-    // 선택 순서대로 업로드
-    const urls: string[] = []
+    // 선택 순서대로 하나씩 업로드 & 즉시 삽입
     for (const file of imageFiles) {
-      const formData = new FormData()
-      formData.set('file', file)
-      formData.set('folder', 'descriptions')
+      try {
+        const formData = new FormData()
+        formData.set('file', file)
 
-      const result = await uploadImage(formData)
-      if (result.url) urls.push(result.url)
-    }
-
-    // 맨 아래에 선택 순서대로 삽입 (이미지 사이에 빈 줄)
-    if (urls.length > 0) {
-      editor.commands.focus('end')
-      for (const url of urls) {
-        editor
-          .chain()
-          .insertContent('<p></p>')
-          .setImage({ src: url })
-          .run()
+        const result = await uploadImage(formData)
+        if (result.error) {
+          console.error('업로드 에러:', result.error)
+          alert('이미지 업로드 실패: ' + result.error)
+          continue
+        }
+        if (result.url) {
+          editor.commands.focus('end')
+          editor.chain().insertContent('<p></p>').run()
+          editor.chain().focus().setImage({ src: result.url }).run()
+        }
+      } catch (err) {
+        console.error('업로드 예외:', err)
+        alert('이미지 업로드 중 오류가 발생했습니다.')
       }
-      editor.chain().insertContent('<p></p>').run()
     }
+    // 마지막에 빈 줄 추가
+    editor.chain().focus('end').insertContent('<p></p>').run()
 
     setUploading(false)
   }, [editor])
