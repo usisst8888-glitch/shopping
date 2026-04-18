@@ -3,19 +3,22 @@ import { createClient } from '@/lib/supabase/server'
 import { HeaderAuth } from './header-auth'
 import { HeaderCategories } from './header-categories'
 import type { NavItem } from '@/lib/types/design'
+import { cache } from 'react'
 
-export async function Header({
-  siteName,
-  navItems,
-  logoUrl,
-}: {
-  siteName: string
-  navItems?: NavItem[]
-  logoUrl?: string | null
-}) {
+const getHeaderData = cache(async () => {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
+  const [userResult, categoriesResult] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from('categories')
+      .select('id, name, slug, parent_id, level')
+      .lte('level', 2)
+      .order('level')
+      .order('sort_order'),
+  ])
+
+  const user = userResult.data.user
   let isAdmin = false
   if (user) {
     const { data: profile } = await supabase
@@ -26,12 +29,19 @@ export async function Header({
     isAdmin = profile?.role === 'admin'
   }
 
-  const { data: categories } = await supabase
-    .from('categories')
-    .select('id, name, slug, parent_id, level')
-    .lte('level', 2)
-    .order('level')
-    .order('sort_order')
+  return { user, isAdmin, categories: categoriesResult.data ?? [] }
+})
+
+export async function Header({
+  siteName,
+  navItems,
+  logoUrl,
+}: {
+  siteName: string
+  navItems?: NavItem[]
+  logoUrl?: string | null
+}) {
+  const { user, isAdmin, categories } = await getHeaderData()
 
   const items = navItems && navItems.length > 0 ? navItems : []
 

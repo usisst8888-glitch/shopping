@@ -2,6 +2,7 @@ import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import type { Banner, SiteDesign, LayoutSection } from '@/lib/types/design'
 import { resolveLayout } from '@/lib/default-layout'
+import { cache } from 'react'
 
 export type SiteConfig = {
   id: string
@@ -27,7 +28,8 @@ const FALLBACK_SITE: SiteConfig = {
   footer_info: {},
 }
 
-export async function getSiteConfig(): Promise<SiteConfig> {
+// React cache로 같은 요청 내에서 중복 호출 방지
+export const getSiteConfig = cache(async (): Promise<SiteConfig> => {
   const headersList = await headers()
   const host = headersList.get('host') ?? 'localhost:3000'
 
@@ -48,9 +50,9 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     .single()
 
   return (fallback as SiteConfig) ?? FALLBACK_SITE
-}
+})
 
-export async function getSiteConfigFull(): Promise<SiteConfigFull> {
+export const getSiteConfigFull = cache(async (): Promise<SiteConfigFull> => {
   const site = await getSiteConfig()
 
   if (!site.id) {
@@ -87,4 +89,4 @@ export async function getSiteConfigFull(): Promise<SiteConfigFull> {
     banners,
     layout: resolveLayout(design, banners),
   }
-}
+})
