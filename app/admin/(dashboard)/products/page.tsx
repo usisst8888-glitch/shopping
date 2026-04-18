@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { getProducts, getAllCategoriesFlat } from './actions'
-import { ProductActions } from '@/components/admin/product-actions'
+import { ProductTable } from '@/components/admin/product-table'
 
 export const metadata = { title: '상품 관리' }
 
@@ -85,7 +85,6 @@ export default async function ProductsPage({
         <form method="GET" action="/admin/products" className="flex flex-wrap items-end gap-3">
           <input type="hidden" name="size" value={size} />
 
-          {/* 검색 */}
           <div className="flex-1 min-w-[200px]">
             <label className="mb-1 block text-xs font-medium text-zinc-500">상품 검색</label>
             <input
@@ -97,7 +96,6 @@ export default async function ProductsPage({
             />
           </div>
 
-          {/* 상태 필터 */}
           <div>
             <label className="mb-1 block text-xs font-medium text-zinc-500">상태</label>
             <select
@@ -111,7 +109,6 @@ export default async function ProductsPage({
             </select>
           </div>
 
-          {/* 카테고리 필터 */}
           <div>
             <label className="mb-1 block text-xs font-medium text-zinc-500">카테고리</label>
             <select
@@ -128,7 +125,6 @@ export default async function ProductsPage({
             </select>
           </div>
 
-          {/* 검색 버튼 */}
           <button
             type="submit"
             className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
@@ -136,7 +132,6 @@ export default async function ProductsPage({
             검색
           </button>
 
-          {/* 초기화 */}
           {(search || status !== 'all' || categoryId) && (
             <Link
               href="/admin/products"
@@ -176,165 +171,73 @@ export default async function ProductsPage({
       </div>
 
       {/* 상품 테이블 */}
-      <div className="rounded-xl bg-white shadow-sm">
-        {products.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="text-zinc-400">
-              {search || status !== 'all' || categoryId
-                ? '검색 결과가 없습니다.'
-                : '등록된 상품이 없습니다.'}
-            </p>
-            {!search && status === 'all' && !categoryId && (
-              <Link
-                href="/admin/products/new"
-                className="mt-3 inline-block text-sm font-medium text-blue-600 hover:underline"
-              >
-                첫 상품을 등록해보세요
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-zinc-100">
-                  <th className="px-6 py-3 text-left font-medium text-zinc-500">번호</th>
-                  <th className="px-6 py-3 text-left font-medium text-zinc-500">썸네일</th>
-                  <th className="px-6 py-3 text-left font-medium text-zinc-500">상품명</th>
-                  <th className="px-6 py-3 text-right font-medium text-zinc-500">가격</th>
-                  <th className="px-6 py-3 text-left font-medium text-zinc-500">카테고리</th>
-                  <th className="px-6 py-3 text-left font-medium text-zinc-500">등록일</th>
-                  <th className="px-6 py-3 text-center font-medium text-zinc-500">상태</th>
-                  <th className="px-6 py-3 text-center font-medium text-zinc-500">관리</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((product, idx) => (
-                  <tr key={product.id} className="border-b border-zinc-50 hover:bg-zinc-50">
-                    <td className="px-6 py-3 text-sm text-zinc-500">
-                      {total - ((page - 1) * size + idx)}
-                    </td>
-                    <td className="px-6 py-3">
-                      {product.thumbnail_url ? (
-                        <img
-                          src={product.thumbnail_url}
-                          alt={product.name}
-                          className="h-12 w-12 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-100 text-[10px] text-zinc-400">
-                          없음
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-3">
-                      <p className="font-medium text-zinc-900">{product.name}</p>
-                    </td>
-                    <td className="px-6 py-3 text-right font-medium text-zinc-900">
-                      {product.price.toLocaleString()}원
-                    </td>
-                    <td className="px-6 py-3">
-                      <div className="flex flex-wrap gap-1">
-                        {product.categories?.map((cat) => (
-                          <span
-                            key={cat.id}
-                            className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-600"
-                          >
-                            {cat.name}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-3 text-zinc-500">
-                      {new Date(product.created_at).toLocaleDateString('ko-KR')}
-                    </td>
-                    <td className="px-6 py-3 text-center">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                          product.is_active
-                            ? 'bg-green-50 text-green-700'
-                            : 'bg-zinc-100 text-zinc-500'
-                        }`}
-                      >
-                        {product.is_active ? '판매중' : '숨김'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3 text-center">
-                      <ProductActions
-                        productId={product.id}
-                        productSlug={(product as any).slug}
-                        productName={product.name}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {products.length === 0 ? (
+        <div className="rounded-xl bg-white py-16 text-center shadow-sm">
+          <p className="text-zinc-400">
+            {search || status !== 'all' || categoryId
+              ? '검색 결과가 없습니다.'
+              : '등록된 상품이 없습니다.'}
+          </p>
+          {!search && status === 'all' && !categoryId && (
+            <Link
+              href="/admin/products/new"
+              className="mt-3 inline-block text-sm font-medium text-blue-600 hover:underline"
+            >
+              첫 상품을 등록해보세요
+            </Link>
+          )}
+        </div>
+      ) : (
+        <ProductTable
+          products={products as any}
+          total={total}
+          page={page}
+          size={size}
+        />
+      )}
 
       {/* 페이지네이션 */}
       {totalPages > 1 && (
         <div className="mt-4 flex items-center justify-center gap-1">
-          {/* 처음 */}
           <Link
             href={buildUrl({ page: 1 })}
             className={`rounded-lg px-3 py-2 text-sm ${
-              page === 1
-                ? 'pointer-events-none text-zinc-300'
-                : 'text-zinc-600 hover:bg-zinc-100'
+              page === 1 ? 'pointer-events-none text-zinc-300' : 'text-zinc-600 hover:bg-zinc-100'
             }`}
           >
             &laquo;
           </Link>
-
-          {/* 이전 */}
           <Link
             href={buildUrl({ page: Math.max(1, page - 1) })}
             className={`rounded-lg px-3 py-2 text-sm ${
-              page === 1
-                ? 'pointer-events-none text-zinc-300'
-                : 'text-zinc-600 hover:bg-zinc-100'
+              page === 1 ? 'pointer-events-none text-zinc-300' : 'text-zinc-600 hover:bg-zinc-100'
             }`}
           >
             &lsaquo;
           </Link>
-
-          {/* 페이지 번호 */}
           {pageNumbers.map((p) => (
             <Link
               key={p}
               href={buildUrl({ page: p })}
               className={`rounded-lg px-3 py-2 text-sm font-medium ${
-                p === page
-                  ? 'bg-zinc-900 text-white'
-                  : 'text-zinc-600 hover:bg-zinc-100'
+                p === page ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100'
               }`}
             >
               {p}
             </Link>
           ))}
-
-          {/* 다음 */}
           <Link
             href={buildUrl({ page: Math.min(totalPages, page + 1) })}
             className={`rounded-lg px-3 py-2 text-sm ${
-              page === totalPages
-                ? 'pointer-events-none text-zinc-300'
-                : 'text-zinc-600 hover:bg-zinc-100'
+              page === totalPages ? 'pointer-events-none text-zinc-300' : 'text-zinc-600 hover:bg-zinc-100'
             }`}
           >
             &rsaquo;
           </Link>
-
-          {/* 마지막 */}
           <Link
             href={buildUrl({ page: totalPages })}
             className={`rounded-lg px-3 py-2 text-sm ${
-              page === totalPages
-                ? 'pointer-events-none text-zinc-300'
-                : 'text-zinc-600 hover:bg-zinc-100'
+              page === totalPages ? 'pointer-events-none text-zinc-300' : 'text-zinc-600 hover:bg-zinc-100'
             }`}
           >
             &raquo;
