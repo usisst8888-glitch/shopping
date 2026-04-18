@@ -78,22 +78,17 @@ export function TiptapEditor({
       if (result.url) urls.push(result.url)
     }
 
-    // 맨 아래에 선택 순서대로 삽입 (이미지 사이에 빈 줄, 가운데 정렬)
+    // 맨 아래에 선택 순서대로 삽입 (이미지 사이에 빈 줄)
     if (urls.length > 0) {
       editor.commands.focus('end')
       for (const url of urls) {
-        editor.chain()
-          .insertContent([
-            { type: 'paragraph' },
-            {
-              type: 'paragraph',
-              attrs: { textAlign: 'center' },
-              content: [{ type: 'image', attrs: { src: url } }],
-            },
-          ])
+        editor
+          .chain()
+          .insertContent('<p></p>')
+          .setImage({ src: url })
           .run()
       }
-      editor.chain().insertContent({ type: 'paragraph' }).run()
+      editor.chain().insertContent('<p></p>').run()
     }
 
     setUploading(false)
