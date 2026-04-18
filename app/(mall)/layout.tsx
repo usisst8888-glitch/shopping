@@ -3,6 +3,7 @@ import { Footer } from '@/components/layout/footer'
 import { PageTracker } from '@/components/layout/page-tracker'
 import { getSiteConfigFull } from '@/lib/site'
 import { trackPageView } from '@/lib/track'
+import { after } from 'next/server'
 
 export default async function MallLayout({
   children,
@@ -11,8 +12,10 @@ export default async function MallLayout({
 }) {
   const site = await getSiteConfigFull()
 
-  // 사이트 전체 방문 추적 (렌더링 블로킹 없음)
-  trackPageView(site.id).catch(() => {})
+  // 렌더링 완료 후 비동기로 추적 (응답 속도에 영향 없음)
+  after(() => {
+    trackPageView(site.id).catch(() => {})
+  })
 
   return (
     <>

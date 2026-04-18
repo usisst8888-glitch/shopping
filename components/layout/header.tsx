@@ -3,34 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { HeaderAuth } from './header-auth'
 import { HeaderCategories } from './header-categories'
 import type { NavItem } from '@/lib/types/design'
-import { cache } from 'react'
-
-const getHeaderData = cache(async () => {
-  const supabase = await createClient()
-
-  const [userResult, categoriesResult] = await Promise.all([
-    supabase.auth.getUser(),
-    supabase
-      .from('categories')
-      .select('id, name, slug, parent_id, level')
-      .lte('level', 2)
-      .order('level')
-      .order('sort_order'),
-  ])
-
-  const user = userResult.data.user
-  let isAdmin = false
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    isAdmin = profile?.role === 'admin'
-  }
-
-  return { user, isAdmin, categories: categoriesResult.data ?? [] }
-})
+import { getCachedCategories } from '@/lib/site'
 
 export async function Header({
   siteName,
@@ -41,7 +14,23 @@ export async function Header({
   navItems?: NavItem[]
   logoUrl?: string | null
 }) {
-  const { user, isAdmin, categories } = await getHeaderData()
+  // 유저 인증과 카테고리를 병렬로 가져옴
+  const supabase = await createClient()
+
+  const [{ data: { user } }, categories] = await Promise.all([
+    supabase.auth.getUser(),
+    getCachedCategories(),
+  ])
+
+  let isAdmin = false
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    isAdmin = profile?.role === 'admin'
+  }
 
   const items = navItems && navItems.length > 0 ? navItems : []
 
