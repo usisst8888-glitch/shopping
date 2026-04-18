@@ -14,38 +14,18 @@ export async function POST(request: NextRequest) {
 
   const supabase = await createClient()
 
-  const { data: pageStat } = await supabase
-    .from('page_stats')
-    .select('id, page_views, visitors, visitor_ips')
-    .eq('site_id', siteId)
-    .eq('date', today)
-    .eq('path', path)
-    .single()
-
-  if (pageStat) {
-    const pageIps: string[] = pageStat.visitor_ips ?? []
-    const isNewPageVisitor = !pageIps.includes(ip)
-
-    if (isNewPageVisitor) {
-      await supabase
-        .from('page_stats')
-        .update({
-          page_views: pageStat.page_views + 1,
-          visitors: pageStat.visitors + 1,
-          visitor_ips: [...pageIps, ip],
-        })
-        .eq('id', pageStat.id)
-    }
-  } else {
-    await supabase.from('page_stats').insert({
+  // page_stats upsert - 1번의 DB 호출로 처리
+  await supabase.from('page_stats').upsert(
+    {
       site_id: siteId,
       date: today,
       path,
       page_views: 1,
       visitors: 1,
       visitor_ips: [ip],
-    })
-  }
+    },
+    { onConflict: 'site_id,date,path' }
+  )
 
   return NextResponse.json({ ok: true })
 }
