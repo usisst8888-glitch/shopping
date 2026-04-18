@@ -18,3 +18,32 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* TipTap 에디터 이미지 정렬 */
+.prose img {
+  display: block;
+}
+.prose [style*="text-align: center"] img,
+.prose [style*="text-align:center"] img {
+  margin-left: auto;
+  margin-right: auto;
+}
+.prose [style*="text-align: right"] img,
+.prose [style*="text-align:right"] img {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* 프론트 상품 상세에서도 이미지 정렬 적용 */
+[style*="text-align: center"] img,
+[style*="text-align:center"] img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+[style*="text-align: right"] img,
+[style*="text-align:right"] img {
+  display: block;
+  margin-left: auto;
+  margin-right: 0;
+}
