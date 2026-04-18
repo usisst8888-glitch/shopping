@@ -67,15 +67,29 @@ export function TiptapEditor({
 
     setUploading(true)
 
+    // 선택 순서대로 업로드
+    const urls: string[] = []
     for (const file of imageFiles) {
       const formData = new FormData()
       formData.set('file', file)
       formData.set('folder', 'descriptions')
 
       const result = await uploadImage(formData)
-      if (result.url) {
-        editor.chain().focus().setImage({ src: result.url }).run()
+      if (result.url) urls.push(result.url)
+    }
+
+    // 맨 아래에 선택 순서대로 삽입 (이미지 사이에 빈 줄)
+    if (urls.length > 0) {
+      editor.commands.focus('end')
+      for (const url of urls) {
+        editor.chain()
+          .insertContent([
+            { type: 'paragraph' },
+            { type: 'image', attrs: { src: url } },
+          ])
+          .run()
       }
+      editor.chain().insertContent({ type: 'paragraph' }).run()
     }
 
     setUploading(false)
