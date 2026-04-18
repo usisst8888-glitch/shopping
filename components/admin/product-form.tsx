@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { createProduct, updateProduct, uploadImage } from '@/app/admin/(dashboard)/products/actions'
+import { createProduct, updateProduct } from '@/app/admin/(dashboard)/products/actions'
 import { TiptapEditor } from './tiptap-editor'
 
 type FlatCategory = {
@@ -88,6 +88,17 @@ export function ProductForm({
     return true
   }
 
+  async function uploadFile(file: File): Promise<{ url?: string; error?: string }> {
+    const formData = new FormData()
+    formData.set('file', file)
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      return await res.json()
+    } catch {
+      return { error: '업로드 중 오류가 발생했습니다.' }
+    }
+  }
+
   async function handleThumbnailUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -95,11 +106,7 @@ export function ProductForm({
     setUploadingThumb(true)
     setThumbnailPreview(URL.createObjectURL(file))
 
-    const formData = new FormData()
-    formData.set('file', file)
-    formData.set('folder', 'thumbnails')
-
-    const result = await uploadImage(formData)
+    const result = await uploadFile(file)
     if (result.url) {
       setThumbnailUrl(result.url)
     } else {
@@ -117,10 +124,7 @@ export function ProductForm({
     const uploaded: string[] = []
 
     for (const file of files) {
-      const formData = new FormData()
-      formData.set('file', file)
-      formData.set('folder', 'thumbnails')
-      const result = await uploadImage(formData)
+      const result = await uploadFile(file)
       if (result.url) {
         uploaded.push(result.url)
       } else {
