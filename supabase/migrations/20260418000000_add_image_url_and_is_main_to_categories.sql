@@ -1,0 +1,3 @@
+ALTER TABLE public.categories
+  ADD COLUMN IF NOT EXISTS image_url TEXT,
+  ADD COLUMN IF NOT EXISTS is_main BOOLEAN DEFAULT false;
