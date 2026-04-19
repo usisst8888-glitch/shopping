@@ -149,11 +149,11 @@ export function TiptapEditor({
   function isImageAligned(align: 'left' | 'center' | 'right') {
     if (!imageSelected) return editor!.isActive({ textAlign: align })
     const { node } = editor!.state.selection as any
-    if (!node?.attrs?.style) return align === 'left' // 기본은 좌측
-    const style = node.attrs.style as string
-    if (align === 'center') return style.includes('margin: 0 auto') && !style.includes('margin: 0 0 0 auto')
+    const style = (node?.attrs?.style as string) ?? ''
+    if (align === 'center') return style.includes('margin: 0 auto;')
     if (align === 'right') return style.includes('margin: 0 0 0 auto')
-    return style.includes('margin: 0 auto 0 0')
+    if (align === 'left') return style.includes('margin: 0 auto 0 0')
+    return false
   }
 
   return (
