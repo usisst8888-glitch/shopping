@@ -4,9 +4,9 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import TextAlign from '@tiptap/extension-text-align'
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 
-// 이미지에 style 속성 추가해서 정렬 지원
+// 이미지에 style 속성 추가
 const CustomImage = Image.extend({
   addAttributes() {
     return {
@@ -35,6 +35,7 @@ export function TiptapEditor({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [imageSelected, setImageSelected] = useState(false)
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -48,6 +49,9 @@ export function TiptapEditor({
     content,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
+    },
+    onSelectionUpdate: ({ editor }) => {
+      setImageSelected(editor.isActive('image'))
     },
     editorProps: {
       attributes: {
@@ -101,10 +105,7 @@ export function TiptapEditor({
         if (result.url) {
           editor.commands.focus('end')
           editor.chain().insertContent('<p></p>').run()
-          editor.chain().focus().setImage({
-            src: result.url,
-            style: 'display: block; margin: 0 auto;',
-          } as any).run()
+          editor.chain().focus().setImage({ src: result.url } as any).run()
         }
       } catch (err) {
         console.error('업로드 예외:', err)
@@ -130,19 +131,29 @@ export function TiptapEditor({
   function handleAlign(align: 'left' | 'center' | 'right') {
     if (!editor) return
 
-    // 이미지가 선택된 경우 이미지 스타일 변경
-    if (editor.isActive('image')) {
+    if (imageSelected) {
       const styleMap = {
         left: 'display: block; margin: 0 auto 0 0;',
         center: 'display: block; margin: 0 auto;',
         right: 'display: block; margin: 0 0 0 auto;',
       }
-      editor.chain().focus().updateAttributes('image', {
+      editor.chain().updateAttributes('image', {
         style: styleMap[align],
       }).run()
     } else {
       editor.chain().focus().setTextAlign(align).run()
     }
+  }
+
+  // 현재 이미지의 정렬 상태 확인
+  function isImageAligned(align: 'left' | 'center' | 'right') {
+    if (!imageSelected) return editor!.isActive({ textAlign: align })
+    const { node } = editor!.state.selection as any
+    if (!node?.attrs?.style) return align === 'left' // 기본은 좌측
+    const style = node.attrs.style as string
+    if (align === 'center') return style.includes('margin: 0 auto') && !style.includes('margin: 0 0 0 auto')
+    if (align === 'right') return style.includes('margin: 0 0 0 auto')
+    return style.includes('margin: 0 auto 0 0')
   }
 
   return (
@@ -196,19 +207,19 @@ export function TiptapEditor({
         <div className="mx-1 w-px bg-zinc-200" />
 
         <ToolButton
-          active={editor.isActive({ textAlign: 'left' })}
+          active={isImageAligned('left')}
           onClick={() => handleAlign('left')}
         >
           좌
         </ToolButton>
         <ToolButton
-          active={editor.isActive({ textAlign: 'center' })}
+          active={isImageAligned('center')}
           onClick={() => handleAlign('center')}
         >
           중
         </ToolButton>
         <ToolButton
-          active={editor.isActive({ textAlign: 'right' })}
+          active={isImageAligned('right')}
           onClick={() => handleAlign('right')}
         >
           우
@@ -251,6 +262,12 @@ export function TiptapEditor({
             업로드 중...
           </span>
         )}
+
+        {imageSelected && (
+          <span className="ml-2 text-xs text-blue-500">
+            이미지 선택됨
+          </span>
+        )}
       </div>
 
       {/* 에디터 */}
@@ -280,6 +297,7 @@ function ToolButton({
   return (
     <button
       type="button"
+      onMouseDown={(e) => e.preventDefault()} // 포커스 이동 방지
       onClick={onClick}
       className={`rounded px-2 py-1 text-xs font-medium transition ${
         active
