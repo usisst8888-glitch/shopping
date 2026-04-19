@@ -1,3 +1,25 @@
+export async function deleteFromCloudflare(imageUrl: string): Promise<void> {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN
+  const accountHash = process.env.CLOUDFLARE_ACCOUNT_HASH
+
+  if (!accountId || !apiToken || !accountHash) return
+
+  // URL에서 imageId 추출: https://imagedelivery.net/{hash}/{imageId}/public
+  const match = imageUrl.match(new RegExp(`${accountHash}/([^/]+)/`))
+  if (!match) return
+
+  const imageId = match[1]
+
+  await fetch(
+    `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${apiToken}` },
+    }
+  ).catch(() => {})
+}
+
 export async function uploadToCloudflare(file: File): Promise<{ url?: string; error?: string }> {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
   const apiToken = process.env.CLOUDFLARE_API_TOKEN
