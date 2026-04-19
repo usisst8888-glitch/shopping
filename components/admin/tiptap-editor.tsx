@@ -23,6 +23,12 @@ const CustomImage = Image.extend({
   },
 })
 
+// HTML에서 imagedelivery.net URL 추출
+function extractImageUrls(html: string): string[] {
+  const matches = html.match(/https:\/\/imagedelivery\.net\/[^"'\s)]+/g)
+  return matches ? [...new Set(matches)] : []
+}
+
 export function TiptapEditor({
   content,
   onChange,
@@ -36,6 +42,7 @@ export function TiptapEditor({
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const [imageSelected, setImageSelected] = useState(false)
+  const prevImagesRef = useRef<string[]>(extractImageUrls(content))
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -48,7 +55,22 @@ export function TiptapEditor({
     ],
     content,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML())
+      const html = editor.getHTML()
+      onChange(html)
+
+      // 이미지가 삭제되었는지 확인 → Cloudflare에서도 삭제
+      const currentImages = extractImageUrls(html)
+      const removedImages = prevImagesRef.current.filter(
+        (url) => !currentImages.includes(url)
+      )
+      for (const url of removedImages) {
+        fetch('/api/upload', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        }).catch(() => {})
+      }
+      prevImagesRef.current = currentImages
     },
     onSelectionUpdate: ({ editor }) => {
       setImageSelected(editor.isActive('image'))
@@ -128,6 +150,29 @@ export function TiptapEditor({
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  // 모든 이미지에 정렬 적용
+  function handleAlignAllImages(align: 'left' | 'center' | 'right') {
+    const styleMap = {
+      left: 'display: block; margin: 0 auto 0 0;',
+      center: 'display: block; margin: 0 auto;',
+      right: 'display: block; margin: 0 0 0 auto;',
+    }
+
+    const { doc, tr } = editor!.state
+    const newTr = tr
+
+    doc.descendants((node, pos) => {
+      if (node.type.name === 'image') {
+        newTr.setNodeMarkup(pos, undefined, {
+          ...node.attrs,
+          style: styleMap[align],
+        })
+      }
+    })
+
+    editor!.view.dispatch(newTr)
+  }
+
   function handleAlign(align: 'left' | 'center' | 'right') {
     if (!editor) return
 
@@ -145,7 +190,6 @@ export function TiptapEditor({
     }
   }
 
-  // 현재 이미지의 정렬 상태 확인
   function isImageAligned(align: 'left' | 'center' | 'right') {
     if (!imageSelected) return editor!.isActive({ textAlign: align })
     const { node } = editor!.state.selection as any
@@ -248,6 +292,15 @@ export function TiptapEditor({
         >
           이미지
         </ToolButton>
+
+        {/* 전체 이미지 정렬 */}
+        <ToolButton
+          active={false}
+          onClick={() => handleAlignAllImages('center')}
+        >
+          전체 가운데
+        </ToolButton>
+
         <input
           ref={fileInputRef}
           type="file"
@@ -297,7 +350,7 @@ function ToolButton({
   return (
     <button
       type="button"
-      onMouseDown={(e) => e.preventDefault()} // 포커스 이동 방지
+      onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={`rounded px-2 py-1 text-xs font-medium transition ${
         active

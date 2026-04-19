@@ -39,3 +39,36 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ url })
 }
+
+export async function DELETE(request: Request) {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN
+  const accountHash = process.env.CLOUDFLARE_ACCOUNT_HASH
+
+  if (!accountId || !apiToken || !accountHash) {
+    return NextResponse.json({ error: 'Cloudflare 설정이 없습니다.' }, { status: 500 })
+  }
+
+  const { url } = await request.json()
+  if (!url) {
+    return NextResponse.json({ error: 'URL이 없습니다.' }, { status: 400 })
+  }
+
+  // URL에서 imageId 추출
+  const match = url.match(new RegExp(`${accountHash}/([^/]+)/`))
+  if (!match) {
+    return NextResponse.json({ error: '유효하지 않은 이미지 URL' }, { status: 400 })
+  }
+
+  const imageId = match[1]
+
+  await fetch(
+    `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${apiToken}` },
+    }
+  )
+
+  return NextResponse.json({ ok: true })
+}

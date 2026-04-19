@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createProduct, updateProduct } from '@/app/admin/(dashboard)/products/actions'
 import { TiptapEditor } from './tiptap-editor'
@@ -55,8 +55,25 @@ export function ProductForm({
   })
   const [uploadingThumb, setUploadingThumb] = useState(false)
   const [uploadingSub, setUploadingSub] = useState(false)
+  const [isDirty, setIsDirty] = useState(false)
   const thumbInputRef = useRef<HTMLInputElement>(null)
   const subInputRef = useRef<HTMLInputElement>(null)
+
+  // 새로고침/페이지 이탈 시 경고
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault()
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isDirty])
+
+  // 폼 변경 감지
+  function markDirty() {
+    if (!isDirty) setIsDirty(true)
+  }
 
   // 하위 카테고리가 있는 카테고리 ID 집합
   const hasChildren = new Set(
@@ -109,6 +126,7 @@ export function ProductForm({
     const result = await uploadFile(file)
     if (result.url) {
       setThumbnailUrl(result.url)
+      markDirty()
     } else {
       setError(result.error ?? '썸네일 업로드 실패')
       setThumbnailPreview('')
@@ -133,12 +151,23 @@ export function ProductForm({
     }
 
     setSubImages((prev) => [...prev, ...uploaded])
+    if (uploaded.length > 0) markDirty()
     setUploadingSub(false)
     if (subInputRef.current) subInputRef.current.value = ''
   }
 
   function removeSubImage(index: number) {
+    const removed = subImages[index]
     setSubImages((prev) => prev.filter((_, i) => i !== index))
+    markDirty()
+    // Cloudflare에서 삭제
+    if (removed?.includes('imagedelivery.net')) {
+      fetch('/api/upload', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: removed }),
+      }).catch(() => {})
+    }
   }
 
   function promoteToMain(index: number) {
@@ -184,6 +213,7 @@ export function ProductForm({
       setError(result.error)
       setLoading(false)
     } else {
+      setIsDirty(false)
       router.push('/admin/products')
     }
   }
@@ -317,14 +347,14 @@ export function ProductForm({
 
             <div className="rounded-xl bg-white p-6 shadow-sm">
               <h3 className="mb-4 text-lg font-semibold text-zinc-900">요약 설명</h3>
-              <TiptapEditor content={summary} onChange={setSummary} minHeight="120px" />
+              <TiptapEditor content={summary} onChange={(v) => { setSummary(v); markDirty() }} minHeight="120px" />
             </div>
           </div>
 
           {/* 상세 설명 (TipTap) */}
           <div className="rounded-xl bg-white p-6 shadow-sm">
             <h3 className="mb-4 text-lg font-semibold text-zinc-900">상세 설명</h3>
-            <TiptapEditor content={description} onChange={setDescription} />
+            <TiptapEditor content={description} onChange={(v) => { setDescription(v); markDirty() }} />
           </div>
 
           {/* 저장 */}
