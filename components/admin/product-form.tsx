@@ -23,6 +23,20 @@ type ProductInitial = {
   category_ids: string[]
 }
 
+function extractCfUrls(html: string): string[] {
+  const matches = html.match(/https:\/\/imagedelivery\.net\/[^"'\s)]+/g)
+  return matches ? [...new Set(matches)] : []
+}
+
+async function deleteCfImage(url: string) {
+  if (!url.includes('imagedelivery.net')) return
+  fetch('/api/upload', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  }).catch(() => {})
+}
+
 export function ProductForm({
   categories,
   product,
@@ -44,6 +58,14 @@ export function ProductForm({
   }
 
   const stored = useRef(getStored()).current
+
+  // 원본 이미지 URL 추적 (취소 시 새로 추가된 것만 삭제하기 위해)
+  const originalImagesRef = useRef<Set<string>>(new Set([
+    ...(product?.thumbnail_url ? [product.thumbnail_url] : []),
+    ...(product?.sub_images ?? []),
+    ...extractCfUrls(product?.description ?? ''),
+    ...extractCfUrls(product?.summary ?? ''),
+  ]))
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -172,14 +194,7 @@ export function ProductForm({
   function removeSubImage(index: number) {
     const removed = subImages[index]
     setSubImages((prev) => prev.filter((_, i) => i !== index))
-    // Cloudflare에서 삭제
-    if (removed?.includes('imagedelivery.net')) {
-      fetch('/api/upload', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: removed }),
-      }).catch(() => {})
-    }
+    if (removed) deleteCfImage(removed)
   }
 
   function promoteToMain(index: number) {
@@ -203,6 +218,23 @@ export function ProductForm({
       }
       return next
     })
+  }
+
+  async function handleCancel() {
+    // 현재 폼에 있는 모든 이미지 수집
+    const currentImages: string[] = []
+    if (thumbnailUrl) currentImages.push(thumbnailUrl)
+    currentImages.push(...subImages)
+    currentImages.push(...extractCfUrls(summary))
+    currentImages.push(...extractCfUrls(description))
+
+    // 원본에 없는 이미지(새로 업로드된 것)만 Cloudflare에서 삭제
+    const newImages = currentImages.filter((url) => !originalImagesRef.current.has(url))
+    await Promise.allSettled(newImages.map(deleteCfImage))
+
+    // sessionStorage 삭제
+    sessionStorage.removeItem(storageKey)
+    router.push('/admin/products')
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -382,7 +414,7 @@ export function ProductForm({
             </button>
             <button
               type="button"
-              onClick={() => router.push('/admin/products')}
+              onClick={handleCancel}
               className="rounded-lg border border-zinc-300 px-6 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
             >
               취소
