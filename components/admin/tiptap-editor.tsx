@@ -6,6 +6,23 @@ import Image from '@tiptap/extension-image'
 import TextAlign from '@tiptap/extension-text-align'
 import { useRef, useState, useCallback } from 'react'
 
+// 이미지에 style 속성 추가해서 정렬 지원
+const CustomImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      style: {
+        default: null,
+        parseHTML: (element) => element.getAttribute('style'),
+        renderHTML: (attributes) => {
+          if (!attributes.style) return {}
+          return { style: attributes.style }
+        },
+      },
+    }
+  },
+})
+
 export function TiptapEditor({
   content,
   onChange,
@@ -23,9 +40,9 @@ export function TiptapEditor({
     immediatelyRender: false,
     extensions: [
       StarterKit,
-      Image.configure({ inline: false }),
+      CustomImage.configure({ inline: false }),
       TextAlign.configure({
-        types: ['heading', 'paragraph', 'image'],
+        types: ['heading', 'paragraph'],
       }),
     ],
     content,
@@ -66,7 +83,6 @@ export function TiptapEditor({
 
     setUploading(true)
 
-    // 선택 순서대로 하나씩 업로드 & 즉시 삽입
     for (const file of imageFiles) {
       try {
         const formData = new FormData()
@@ -85,14 +101,16 @@ export function TiptapEditor({
         if (result.url) {
           editor.commands.focus('end')
           editor.chain().insertContent('<p></p>').run()
-          editor.chain().focus().setImage({ src: result.url }).run()
+          editor.chain().focus().setImage({
+            src: result.url,
+            style: 'display: block; margin: 0 auto;',
+          } as any).run()
         }
       } catch (err) {
         console.error('업로드 예외:', err)
         alert('이미지 업로드 중 오류가 발생했습니다.')
       }
     }
-    // 마지막에 빈 줄 추가
     editor.chain().focus('end').insertContent('<p></p>').run()
 
     setUploading(false)
@@ -107,6 +125,24 @@ export function TiptapEditor({
     await handleFiles(Array.from(files))
 
     if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  function handleAlign(align: 'left' | 'center' | 'right') {
+    if (!editor) return
+
+    // 이미지가 선택된 경우 이미지 스타일 변경
+    if (editor.isActive('image')) {
+      const styleMap = {
+        left: 'display: block; margin: 0 auto 0 0;',
+        center: 'display: block; margin: 0 auto;',
+        right: 'display: block; margin: 0 0 0 auto;',
+      }
+      editor.chain().focus().updateAttributes('image', {
+        style: styleMap[align],
+      }).run()
+    } else {
+      editor.chain().focus().setTextAlign(align).run()
+    }
   }
 
   return (
@@ -161,19 +197,19 @@ export function TiptapEditor({
 
         <ToolButton
           active={editor.isActive({ textAlign: 'left' })}
-          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          onClick={() => handleAlign('left')}
         >
           좌
         </ToolButton>
         <ToolButton
           active={editor.isActive({ textAlign: 'center' })}
-          onClick={() => editor.chain().focus().setTextAlign('center').run()}
+          onClick={() => handleAlign('center')}
         >
           중
         </ToolButton>
         <ToolButton
           active={editor.isActive({ textAlign: 'right' })}
-          onClick={() => editor.chain().focus().setTextAlign('right').run()}
+          onClick={() => handleAlign('right')}
         >
           우
         </ToolButton>
