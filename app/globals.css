@@ -19,6 +19,13 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* TipTap 에디터 이미지 선택 표시 */
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* TipTap 에디터 이미지 정렬 */
 .prose img {
   display: block;
