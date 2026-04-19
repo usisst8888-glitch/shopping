@@ -32,19 +32,35 @@ export function ProductForm({
 }) {
   const isEdit = !!product
   const router = useRouter()
+  const storageKey = `product-form-${product?.id ?? 'new'}`
+
+  // sessionStorage에서 저장된 데이터 복원
+  function getStored() {
+    if (typeof window === 'undefined') return null
+    try {
+      const saved = sessionStorage.getItem(storageKey)
+      return saved ? JSON.parse(saved) : null
+    } catch { return null }
+  }
+
+  const stored = useRef(getStored()).current
+
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [thumbnailUrl, setThumbnailUrl] = useState(product?.thumbnail_url ?? '')
-  const [thumbnailPreview, setThumbnailPreview] = useState(product?.thumbnail_url ?? '')
-  const [subImages, setSubImages] = useState<string[]>(product?.sub_images ?? [])
-  const [summary, setSummary] = useState(product?.summary ?? '')
-  const [description, setDescription] = useState(product?.description ?? '')
+  const [thumbnailUrl, setThumbnailUrl] = useState(stored?.thumbnailUrl ?? product?.thumbnail_url ?? '')
+  const [thumbnailPreview, setThumbnailPreview] = useState(stored?.thumbnailUrl ?? product?.thumbnail_url ?? '')
+  const [subImages, setSubImages] = useState<string[]>(stored?.subImages ?? product?.sub_images ?? [])
+  const [summary, setSummary] = useState(stored?.summary ?? product?.summary ?? '')
+  const [description, setDescription] = useState(stored?.description ?? product?.description ?? '')
+  const [formName, setFormName] = useState(stored?.name ?? product?.name ?? '')
+  const [formPrice, setFormPrice] = useState(stored?.price ?? product?.price ?? '')
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
-    new Set(product?.category_ids ?? [])
+    new Set(stored?.categoryIds ?? product?.category_ids ?? [])
   )
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => {
+    const ids = stored?.categoryIds ?? product?.category_ids ?? []
     const expanded = new Set<string>()
-    for (const id of product?.category_ids ?? []) {
+    for (const id of ids) {
       let parentId = categories.find((c) => c.id === id)?.parent_id ?? null
       while (parentId) {
         expanded.add(parentId)
@@ -55,25 +71,24 @@ export function ProductForm({
   })
   const [uploadingThumb, setUploadingThumb] = useState(false)
   const [uploadingSub, setUploadingSub] = useState(false)
-  const [isDirty, setIsDirty] = useState(false)
   const thumbInputRef = useRef<HTMLInputElement>(null)
   const subInputRef = useRef<HTMLInputElement>(null)
 
-  // 새로고침/페이지 이탈 시 경고
+  // 폼 상태를 sessionStorage에 자동 저장
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isDirty) {
-        e.preventDefault()
-      }
+    const data = {
+      name: formName,
+      price: formPrice,
+      thumbnailUrl,
+      subImages,
+      summary,
+      description,
+      categoryIds: [...selectedCategories],
     }
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [isDirty])
-
-  // 폼 변경 감지
-  function markDirty() {
-    if (!isDirty) setIsDirty(true)
-  }
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify(data))
+    } catch {}
+  }, [formName, formPrice, thumbnailUrl, subImages, summary, description, selectedCategories, storageKey])
 
   // 하위 카테고리가 있는 카테고리 ID 집합
   const hasChildren = new Set(
@@ -126,7 +141,6 @@ export function ProductForm({
     const result = await uploadFile(file)
     if (result.url) {
       setThumbnailUrl(result.url)
-      markDirty()
     } else {
       setError(result.error ?? '썸네일 업로드 실패')
       setThumbnailPreview('')
@@ -151,7 +165,6 @@ export function ProductForm({
     }
 
     setSubImages((prev) => [...prev, ...uploaded])
-    if (uploaded.length > 0) markDirty()
     setUploadingSub(false)
     if (subInputRef.current) subInputRef.current.value = ''
   }
@@ -159,7 +172,6 @@ export function ProductForm({
   function removeSubImage(index: number) {
     const removed = subImages[index]
     setSubImages((prev) => prev.filter((_, i) => i !== index))
-    markDirty()
     // Cloudflare에서 삭제
     if (removed?.includes('imagedelivery.net')) {
       fetch('/api/upload', {
@@ -213,7 +225,7 @@ export function ProductForm({
       setError(result.error)
       setLoading(false)
     } else {
-      setIsDirty(false)
+      sessionStorage.removeItem(storageKey)
       router.push('/admin/products')
     }
   }
@@ -322,7 +334,8 @@ export function ProductForm({
                     name="name"
                     type="text"
                     required
-                    defaultValue={product?.name ?? ''}
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
                     className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
                     placeholder="상품명을 입력하세요"
                   />
@@ -337,7 +350,8 @@ export function ProductForm({
                     type="number"
                     required
                     min={0}
-                    defaultValue={product?.price ?? ''}
+                    value={formPrice}
+                    onChange={(e) => setFormPrice(e.target.value)}
                     className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
                     placeholder="0"
                   />
@@ -347,14 +361,14 @@ export function ProductForm({
 
             <div className="rounded-xl bg-white p-6 shadow-sm">
               <h3 className="mb-4 text-lg font-semibold text-zinc-900">요약 설명</h3>
-              <TiptapEditor content={summary} onChange={(v) => { setSummary(v); markDirty() }} minHeight="120px" />
+              <TiptapEditor content={summary} onChange={setSummary} minHeight="120px" />
             </div>
           </div>
 
           {/* 상세 설명 (TipTap) */}
           <div className="rounded-xl bg-white p-6 shadow-sm">
             <h3 className="mb-4 text-lg font-semibold text-zinc-900">상세 설명</h3>
-            <TiptapEditor content={description} onChange={(v) => { setDescription(v); markDirty() }} />
+            <TiptapEditor content={description} onChange={setDescription} />
           </div>
 
           {/* 저장 */}
