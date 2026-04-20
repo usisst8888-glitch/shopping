@@ -3,21 +3,36 @@ export async function deleteFromCloudflare(imageUrl: string): Promise<void> {
   const apiToken = process.env.CLOUDFLARE_API_TOKEN
   const accountHash = process.env.CLOUDFLARE_ACCOUNT_HASH
 
-  if (!accountId || !apiToken || !accountHash) return
+  if (!accountId || !apiToken || !accountHash) {
+    console.error('Cloudflare 환경변수 없음')
+    return
+  }
+
+  if (!imageUrl.includes('imagedelivery.net')) return
 
   // URL에서 imageId 추출: https://imagedelivery.net/{hash}/{imageId}/public
-  const match = imageUrl.match(new RegExp(`${accountHash}/([^/]+)/`))
-  if (!match) return
+  // 또는: https://imagedelivery.net/{hash}/{imageId}
+  const parts = imageUrl.split('/')
+  const hashIndex = parts.indexOf(accountHash)
+  if (hashIndex === -1 || hashIndex + 1 >= parts.length) return
 
-  const imageId = match[1]
+  const imageId = parts[hashIndex + 1]
+  if (!imageId) return
 
-  await fetch(
+  const res = await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}`,
     {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${apiToken}` },
     }
-  ).catch(() => {})
+  ).catch(() => null)
+
+  if (res) {
+    const data = await res.json().catch(() => null)
+    if (!data?.success) {
+      console.error('Cloudflare 이미지 삭제 실패:', imageId, data)
+    }
+  }
 }
 
 export async function uploadToCloudflare(file: File): Promise<{ url?: string; error?: string }> {

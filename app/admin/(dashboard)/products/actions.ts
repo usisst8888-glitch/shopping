@@ -344,7 +344,7 @@ export async function deleteProduct(id: string) {
   // 상품 이미지 정보 가져오기
   const { data: product } = await supabase
     .from('products')
-    .select('thumbnail_url, sub_images, description')
+    .select('thumbnail_url, sub_images, summary, description')
     .eq('id', id)
     .single()
 
@@ -357,7 +357,7 @@ export async function deleteProduct(id: string) {
     return { error: '상품 삭제 중 오류가 발생했습니다.' }
   }
 
-  // Cloudflare 이미지 삭제 (백그라운드)
+  // Cloudflare 이미지 삭제
   if (product) {
     const { deleteFromCloudflare } = await import('@/lib/cloudflare-images')
     const imageUrls: string[] = []
@@ -365,15 +365,23 @@ export async function deleteProduct(id: string) {
     if (product.thumbnail_url) imageUrls.push(product.thumbnail_url)
     if (product.sub_images) imageUrls.push(...(product.sub_images as string[]))
 
+    // 요약설명에서 이미지 URL 추출
+    if (product.summary) {
+      const summaryMatches = product.summary.match(/https:\/\/imagedelivery\.net\/[^"'\s)]+/g)
+      if (summaryMatches) imageUrls.push(...summaryMatches)
+    }
+
     // 상세설명에서 이미지 URL 추출
     if (product.description) {
-      const imgMatches = product.description.match(/https:\/\/imagedelivery\.net\/[^"'\s)]+/g)
-      if (imgMatches) imageUrls.push(...imgMatches)
+      const descMatches = product.description.match(/https:\/\/imagedelivery\.net\/[^"'\s)]+/g)
+      if (descMatches) imageUrls.push(...descMatches)
     }
 
     // 중복 제거 후 삭제
     const uniqueUrls = [...new Set(imageUrls)]
-    await Promise.allSettled(uniqueUrls.map((url) => deleteFromCloudflare(url)))
+    for (const url of uniqueUrls) {
+      await deleteFromCloudflare(url)
+    }
   }
 
   revalidatePath('/admin/products')
