@@ -54,13 +54,16 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'URL이 없습니다.' }, { status: 400 })
   }
 
-  // URL에서 imageId 추출
-  const match = url.match(new RegExp(`${accountHash}/([^/]+)/`))
-  if (!match) {
+  // URL에서 imageId 추출 (슬래시 포함 가능: 206/desc-16)
+  const hashPos = url.indexOf(accountHash)
+  if (hashPos === -1) {
     return NextResponse.json({ error: '유효하지 않은 이미지 URL' }, { status: 400 })
   }
-
-  const imageId = match[1]
+  let imageId = url.slice(hashPos + accountHash.length + 1)
+  imageId = imageId.replace(/\/public$/, '').replace(/\/[a-zA-Z]+$/, '')
+  if (!imageId) {
+    return NextResponse.json({ error: '이미지 ID를 추출할 수 없습니다.' }, { status: 400 })
+  }
 
   await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}`,

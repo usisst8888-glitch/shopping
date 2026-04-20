@@ -10,13 +10,16 @@ export async function deleteFromCloudflare(imageUrl: string): Promise<void> {
 
   if (!imageUrl.includes('imagedelivery.net')) return
 
-  // URL에서 imageId 추출: https://imagedelivery.net/{hash}/{imageId}/public
-  // 또는: https://imagedelivery.net/{hash}/{imageId}
-  const parts = imageUrl.split('/')
-  const hashIndex = parts.indexOf(accountHash)
-  if (hashIndex === -1 || hashIndex + 1 >= parts.length) return
+  // URL에서 imageId 추출
+  // 형식: https://imagedelivery.net/{hash}/{imageId}/public
+  // imageId에 슬래시가 포함될 수 있음 (예: 206/desc-16)
+  const hashPos = imageUrl.indexOf(accountHash)
+  if (hashPos === -1) return
 
-  const imageId = parts[hashIndex + 1]
+  let afterHash = imageUrl.slice(hashPos + accountHash.length + 1) // +1 for /
+  // 끝의 /public 또는 /variant 제거
+  afterHash = afterHash.replace(/\/public$/, '').replace(/\/[a-zA-Z]+$/, '')
+  const imageId = afterHash
   if (!imageId) return
 
   const res = await fetch(
