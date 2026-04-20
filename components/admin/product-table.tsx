@@ -51,14 +51,16 @@ export function ProductTable({
   }
 
   async function handleBulkDelete() {
-    setDeleting(true)
-    for (const id of selected) {
-      await deleteProduct(id)
-    }
+    const ids = [...selected]
     setDeleting(false)
     setSelected(new Set())
     setShowDeleteModal(false)
     router.refresh()
+
+    // 백그라운드에서 삭제 (UI는 즉시 업데이트)
+    for (const id of ids) {
+      deleteProduct(id).catch(() => {})
+    }
   }
 
   return (

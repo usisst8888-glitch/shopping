@@ -341,13 +341,14 @@ export async function moveProductCategories(productId: string, categoryIds: stri
 export async function deleteProduct(id: string) {
   const supabase = await createClient()
 
-  // 상품 이미지 정보 가져오기
+  // 상품 이미지 정보 먼저 가져오기
   const { data: product } = await supabase
     .from('products')
     .select('thumbnail_url, sub_images, summary, description')
     .eq('id', id)
     .single()
 
+  // DB에서 상품 삭제
   const { error } = await supabase
     .from('products')
     .delete()
@@ -357,33 +358,30 @@ export async function deleteProduct(id: string) {
     return { error: '상품 삭제 중 오류가 발생했습니다.' }
   }
 
-  // Cloudflare 이미지 삭제
-  if (product) {
-    const { deleteFromCloudflare } = await import('@/lib/cloudflare-images')
-    const imageUrls: string[] = []
+  revalidatePath('/admin/products')
 
+  // Cloudflare 이미지 삭제 (백그라운드 - 클라이언트를 기다리게 하지 않음)
+  if (product) {
+    const imageUrls: string[] = []
     if (product.thumbnail_url) imageUrls.push(product.thumbnail_url)
     if (product.sub_images) imageUrls.push(...(product.sub_images as string[]))
-
-    // 요약설명에서 이미지 URL 추출
     if (product.summary) {
-      const summaryMatches = product.summary.match(/https:\/\/imagedelivery\.net\/[^"'\s)]+/g)
-      if (summaryMatches) imageUrls.push(...summaryMatches)
+      const m = product.summary.match(/https:\/\/imagedelivery\.net\/[^"'\s)]+/g)
+      if (m) imageUrls.push(...m)
     }
-
-    // 상세설명에서 이미지 URL 추출
     if (product.description) {
-      const descMatches = product.description.match(/https:\/\/imagedelivery\.net\/[^"'\s)]+/g)
-      if (descMatches) imageUrls.push(...descMatches)
+      const m = product.description.match(/https:\/\/imagedelivery\.net\/[^"'\s)]+/g)
+      if (m) imageUrls.push(...m)
     }
 
-    // 중복 제거 후 삭제
     const uniqueUrls = [...new Set(imageUrls)]
-    for (const url of uniqueUrls) {
-      await deleteFromCloudflare(url)
+    if (uniqueUrls.length > 0) {
+      // fire-and-forget: 응답을 기다리지 않고 백그라운드에서 삭제
+      import('@/lib/cloudflare-images').then(({ deleteFromCloudflare }) => {
+        Promise.allSettled(uniqueUrls.map((url) => deleteFromCloudflare(url)))
+      }).catch(() => {})
     }
   }
 
-  revalidatePath('/admin/products')
   return { success: true }
 }
