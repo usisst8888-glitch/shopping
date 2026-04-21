@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { deleteProduct } from '@/app/admin/(dashboard)/products/actions'
+import { deleteProduct, toggleProductActive } from '@/app/admin/(dashboard)/products/actions'
 
 type Product = {
   id: string
@@ -73,6 +73,30 @@ export function ProductTable({
           </div>
           <span className="text-sm">개 선택됨</span>
           <div className="ml-auto flex gap-2">
+            <button
+              onClick={async () => {
+                for (const id of selected) {
+                  await toggleProductActive(id, true)
+                }
+                setSelected(new Set())
+                router.refresh()
+              }}
+              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+            >
+              판매중
+            </button>
+            <button
+              onClick={async () => {
+                for (const id of selected) {
+                  await toggleProductActive(id, false)
+                }
+                setSelected(new Set())
+                router.refresh()
+              }}
+              className="rounded-lg border border-zinc-600 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800"
+            >
+              숨김
+            </button>
             <button
               onClick={() => setSelected(new Set())}
               className="rounded-lg border border-zinc-600 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800"
@@ -173,15 +197,22 @@ export function ProductTable({
                       {new Date(product.created_at).toLocaleDateString('ko-KR')}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={async () => {
+                          await toggleProductActive(product.id, !product.is_active)
+                          router.refresh()
+                        }}
+                        className={`inline-flex cursor-pointer items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition hover:opacity-80 ${
                           product.is_active
                             ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
                             : 'bg-zinc-100 text-zinc-500 ring-1 ring-zinc-200'
                         }`}
+                        title={product.is_active ? '클릭하면 숨김 처리' : '클릭하면 판매중으로 변경'}
                       >
                         {product.is_active ? '판매중' : '숨김'}
-                      </span>
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1.5">

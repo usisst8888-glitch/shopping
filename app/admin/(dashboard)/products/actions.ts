@@ -338,6 +338,22 @@ export async function moveProductCategories(productId: string, categoryIds: stri
   return { success: true }
 }
 
+export async function toggleProductActive(id: string, isActive: boolean) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('products')
+    .update({ is_active: isActive })
+    .eq('id', id)
+
+  if (error) {
+    return { error: '상태 변경 중 오류가 발생했습니다.' }
+  }
+
+  revalidatePath('/admin/products')
+  return { success: true }
+}
+
 export async function deleteProduct(id: string) {
   const supabase = await createClient()
 
