@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { deleteProduct, toggleProductActive } from '@/app/admin/(dashboard)/products/actions'
+import { toggleProductActive } from '@/app/admin/(dashboard)/products/actions'
 
 type Product = {
   id: string
@@ -50,17 +50,20 @@ export function ProductTable({
     setSelected(next)
   }
 
-  async function handleBulkDelete() {
+  function handleBulkDelete() {
     const ids = [...selected]
-    setDeleting(false)
     setSelected(new Set())
     setShowDeleteModal(false)
-    router.refresh()
 
-    // 백그라운드에서 삭제 (UI는 즉시 업데이트)
-    for (const id of ids) {
-      deleteProduct(id).catch(() => {})
-    }
+    // API로 삭제 요청 → 백엔드에서 독립적으로 처리 (페이지 이동해도 계속 진행)
+    fetch('/api/products/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+      keepalive: true,
+    }).catch(() => {})
+
+    router.refresh()
   }
 
   return (
@@ -235,6 +238,7 @@ export function ProductTable({
                             setSelected(new Set([product.id]))
                             setShowDeleteModal(true)
                           }}
+                          onMouseDown={(e) => e.preventDefault()}
                           className="rounded-md bg-red-50 px-2.5 py-1 text-[11px] font-medium text-red-500 transition hover:bg-red-100"
                         >
                           삭제
