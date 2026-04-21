@@ -31,6 +31,7 @@ export default async function EditProductPage({
           thumbnail_url: product.thumbnail_url,
           sub_images: product.sub_images,
           category_ids: product.category_ids,
+          is_active: product.is_active,
         }}
       />
     </div>

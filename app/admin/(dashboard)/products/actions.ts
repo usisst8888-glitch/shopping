@@ -145,6 +145,7 @@ export async function createProduct(formData: FormData) {
   const thumbnailUrl = formData.get('thumbnail_url') as string
   const subImages = JSON.parse(formData.get('sub_images') as string || '[]') as string[]
   const categoryIds = JSON.parse(formData.get('category_ids') as string || '[]') as string[]
+  const isActive = formData.get('is_active') !== 'false'
 
   // 선택된 카테고리들의 category_no를 모두 수집해서 저장
   let categoryNos: string[] = []
@@ -180,6 +181,7 @@ export async function createProduct(formData: FormData) {
       thumbnail_url: thumbnailUrl || null,
       sub_images: subImages,
       category_nos: categoryNos,
+      is_active: isActive,
     })
     .select('id')
     .single()
@@ -234,6 +236,7 @@ export async function updateProduct(id: string, formData: FormData) {
   const thumbnailUrl = formData.get('thumbnail_url') as string
   const subImages = JSON.parse(formData.get('sub_images') as string || '[]') as string[]
   const categoryIds = JSON.parse(formData.get('category_ids') as string || '[]') as string[]
+  const isActive = formData.get('is_active') !== 'false'
 
   let categoryNos: string[] = []
   if (categoryIds.length > 0) {
@@ -278,6 +281,7 @@ export async function updateProduct(id: string, formData: FormData) {
       thumbnail_url: thumbnailUrl || null,
       sub_images: subImages,
       category_nos: categoryNos,
+      is_active: isActive,
     })
     .eq('id', id)
 
