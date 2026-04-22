@@ -9,6 +9,7 @@ type Product = {
   id: string
   name: string
   slug: string | null
+  product_no: number | null
   price: number
   thumbnail_url: string | null
   is_active: boolean
@@ -158,7 +159,7 @@ export function ProductTable({
                       />
                     </td>
                     <td className="px-4 py-3 text-zinc-400">
-                      {total - ((page - 1) * size + idx)}
+                      {product.product_no ?? '-'}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">

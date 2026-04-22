@@ -75,7 +75,7 @@ export async function getProducts(filter?: ProductsFilter): Promise<ProductsResu
   const to = from + size - 1
 
   const { data: products, count, error } = await query
-    .order('created_at', { ascending: false })
+    .order('product_no', { ascending: false, nullsFirst: false })
     .range(from, to)
 
   if (error || !products) return { products: [], total: 0, page, size }
