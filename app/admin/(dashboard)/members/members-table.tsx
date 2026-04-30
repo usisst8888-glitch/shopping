@@ -18,7 +18,7 @@ export function MembersTable({ members }: { members: Member[] }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-zinc-100 bg-zinc-50/50">
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">이메일</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">회원정보</th>
                 <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">역할</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">가입일</th>
                 <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">관리</th>
@@ -28,8 +28,8 @@ export function MembersTable({ members }: { members: Member[] }) {
               {members.map((member) => (
                 <tr key={member.id} className="hover:bg-zinc-50">
                   <td className="px-6 py-4">
-                    <p className="font-medium text-zinc-900">{member.email}</p>
-                    <p className="text-[10px] text-zinc-400">{member.id}</p>
+                    <p className="font-medium text-zinc-900">{member.name || '-'}</p>
+                    <p className="text-xs text-zinc-500">{member.email}</p>
                   </td>
                   <td className="px-6 py-4 text-center">
                     <button

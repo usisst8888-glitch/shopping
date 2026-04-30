@@ -25,6 +25,19 @@ export function SignupForm() {
         </div>
       )}
       <div>
+        <label htmlFor="name" className="mb-1 block text-sm font-medium text-zinc-700">
+          이름
+        </label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+          placeholder="이름을 입력하세요"
+          className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+        />
+      </div>
+      <div>
         <label htmlFor="email" className="mb-1 block text-sm font-medium text-zinc-700">
           이메일
         </label>

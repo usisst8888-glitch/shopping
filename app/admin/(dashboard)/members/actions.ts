@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 export type Member = {
   id: string
   email: string
+  name: string | null
   role: string
   created_at: string
 }
@@ -15,7 +16,7 @@ export async function getMembers(search?: string) {
 
   let query = supabase
     .from('profiles')
-    .select('id, email, role, created_at')
+    .select('id, email, name, role, created_at')
     .order('created_at', { ascending: false })
 
   if (search?.trim()) {

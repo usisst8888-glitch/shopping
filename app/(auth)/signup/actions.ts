@@ -18,11 +18,24 @@ export async function signup(formData: FormData) {
   }
 
   const email = formData.get('email') as string
+  const name = (formData.get('name') as string)?.trim()
 
-  const { error } = await supabase.auth.signUp({ email, password })
+  if (!name) {
+    return { error: '이름을 입력해주세요.' }
+  }
+
+  const { data: signUpData, error } = await supabase.auth.signUp({ email, password })
 
   if (error) {
     return { error: '회원가입 중 오류가 발생했습니다. 다시 시도해주세요.' }
+  }
+
+  // profiles에 이름 저장
+  if (signUpData.user) {
+    await supabase
+      .from('profiles')
+      .update({ name })
+      .eq('id', signUpData.user.id)
   }
 
   // 회원가입 후 바로 로그인
