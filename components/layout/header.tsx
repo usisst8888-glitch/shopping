@@ -14,7 +14,6 @@ export async function Header({
   navItems?: NavItem[]
   logoUrl?: string | null
 }) {
-  // 유저 인증과 카테고리를 병렬로 가져옴
   const supabase = await createClient()
 
   const [{ data: { user } }, categories] = await Promise.all([
@@ -36,30 +35,38 @@ export async function Header({
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-100 bg-white/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
+      {/* 상단: 로고 가운데 + 우측 로그인 */}
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+        <div className="w-24" />
         <Link href="/" className="flex items-center">
           {logoUrl ? (
-            <img src={logoUrl} alt={siteName} className="h-10 w-auto max-w-[180px] object-contain" />
+            <img src={logoUrl} alt={siteName} className="h-10 w-auto max-w-[200px] object-contain" />
           ) : (
             <span className="text-xl font-bold tracking-widest text-zinc-900">{siteName}</span>
           )}
         </Link>
-        <nav className="hidden items-center gap-8 md:flex">
-          {items.map((item, index) => (
-            <Link
-              key={`${item.href}-${index}`}
-              href={item.href}
-              className="text-sm text-zinc-600 hover:text-zinc-900"
-            >
-              {item.label}
-            </Link>
-          ))}
-          <HeaderCategories categories={categories ?? []} />
-        </nav>
-        <div className="flex items-center gap-4">
+        <div className="flex w-24 items-center justify-end gap-4">
           <HeaderAuth user={user} isAdmin={isAdmin} />
         </div>
       </div>
+
+      {/* 하단: 메뉴 가운데 */}
+      {(items.length > 0 || (categories && categories.length > 0)) && (
+        <div className="border-t border-zinc-50">
+          <nav className="mx-auto flex max-w-7xl items-center justify-center gap-8 px-4 py-2">
+            {items.map((item, index) => (
+              <Link
+                key={`${item.href}-${index}`}
+                href={item.href}
+                className="text-sm text-zinc-600 hover:text-zinc-900"
+              >
+                {item.label}
+              </Link>
+            ))}
+            <HeaderCategories categories={categories ?? []} />
+          </nav>
+        </div>
+      )}
     </header>
   )
 }
