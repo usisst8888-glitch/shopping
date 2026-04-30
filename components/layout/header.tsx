@@ -34,26 +34,26 @@ export async function Header({
   const items = navItems && navItems.length > 0 ? navItems : []
 
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-100 bg-white/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md">
       {/* 상단: 로고 가운데 + 우측 로그인 */}
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-        <div className="w-24" />
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 pt-5 pb-2">
+        <div className="w-32" />
         <Link href="/" className="flex items-center">
           {logoUrl ? (
-            <img src={logoUrl} alt={siteName} className="h-10 w-auto max-w-[200px] object-contain" />
+            <img src={logoUrl} alt={siteName} className="h-12 w-auto max-w-[220px] object-contain" />
           ) : (
-            <span className="text-xl font-bold tracking-widest text-zinc-900">{siteName}</span>
+            <span className="text-2xl font-bold tracking-widest text-zinc-900">{siteName}</span>
           )}
         </Link>
-        <div className="flex w-24 items-center justify-end gap-4">
+        <div className="flex w-32 items-center justify-end gap-4">
           <HeaderAuth user={user} isAdmin={isAdmin} />
         </div>
       </div>
 
       {/* 하단: 메뉴 가운데 */}
       {(items.length > 0 || (categories && categories.length > 0)) && (
-        <div className="border-t border-zinc-50">
-          <nav className="mx-auto flex max-w-7xl items-center justify-center gap-8 px-4 py-2">
+        <div>
+          <nav className="mx-auto flex max-w-7xl items-center justify-center gap-8 px-4 pb-3 pt-1">
             {items.map((item, index) => (
               <Link
                 key={`${item.href}-${index}`}

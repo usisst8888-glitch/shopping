@@ -20,14 +20,14 @@ export function HeaderAuth({ user, isAdmin }: { user: User | null; isAdmin: bool
         {isAdmin && (
           <Link
             href="/admin"
-            className="text-sm font-medium text-zinc-900 hover:underline"
+            className="rounded-lg bg-zinc-900 px-4 py-1.5 text-xs font-medium text-white hover:bg-zinc-800"
           >
-            관리자 대시보드
+            관리자
           </Link>
         )}
         <button
           onClick={handleLogout}
-          className="text-sm text-zinc-600 hover:text-zinc-900"
+          className="rounded-lg border border-zinc-300 px-4 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
         >
           로그아웃
         </button>
