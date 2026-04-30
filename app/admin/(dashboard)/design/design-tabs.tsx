@@ -14,16 +14,25 @@ const tabs: { key: Tab; label: string }[] = [
   { key: 'design', label: '디자인 설정' },
 ]
 
+type CategoryOption = {
+  id: string
+  name: string
+  level: number
+  parent_id: string | null
+}
+
 export function DesignTabs({
   siteId,
   design,
   banners,
   layout,
+  categories,
 }: {
   siteId: string
   design: SiteDesign | null
   banners: Banner[]
   layout: LayoutSection[]
+  categories: CategoryOption[]
 }) {
   const [activeTab, setActiveTab] = useState<Tab>('layout')
 
@@ -54,7 +63,7 @@ export function DesignTabs({
         <BannerManager banners={banners} siteId={siteId} />
       )}
       {activeTab === 'design' && (
-        <DesignManager siteId={siteId} design={design} />
+        <DesignManager siteId={siteId} design={design} categories={categories} />
       )}
     </div>
   )

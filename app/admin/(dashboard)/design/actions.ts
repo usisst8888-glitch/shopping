@@ -63,6 +63,15 @@ export async function upsertDesign(siteId: string, formData: FormData) {
     brandsList = []
   }
 
+  let displayCategoryIds: string[] = []
+  try {
+    displayCategoryIds = JSON.parse(formData.get('display_category_ids') as string || '[]')
+  } catch {
+    displayCategoryIds = []
+  }
+
+  const featuredCategoryId = (formData.get('featured_category_id') as string)?.trim() || null
+
   const upsertData: Record<string, unknown> = {
     site_id: siteId,
     hero_title: heroTitle,
@@ -75,6 +84,8 @@ export async function upsertDesign(siteId: string, formData: FormData) {
     footer_hours: footerHours,
     footer_lunch: footerLunch,
     brands_list: brandsList,
+    display_category_ids: displayCategoryIds,
+    featured_category_id: featuredCategoryId,
   }
 
   if (logoUrl !== undefined) {

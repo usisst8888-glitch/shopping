@@ -3,6 +3,7 @@ import { getAdminSiteId } from '@/lib/admin-site'
 import { getDesign, getBanners } from './actions'
 import { resolveLayout } from '@/lib/default-layout'
 import { DesignTabs } from './design-tabs'
+import { createClient } from '@/lib/supabase/server'
 
 export const metadata = { title: '디자인 관리' }
 
@@ -21,10 +22,17 @@ export default async function DesignPage() {
     )
   }
 
+  const supabase = await createClient()
   const [design, banners] = await Promise.all([
     getDesign(currentSiteId),
     getBanners(currentSiteId),
   ])
+
+  const { data: allCategories } = await supabase
+    .from('categories')
+    .select('id, name, level, parent_id')
+    .order('level')
+    .order('sort_order')
 
   return (
     <div>
@@ -34,6 +42,7 @@ export default async function DesignPage() {
         design={design}
         banners={banners}
         layout={resolveLayout(design, banners)}
+        categories={allCategories ?? []}
       />
     </div>
   )

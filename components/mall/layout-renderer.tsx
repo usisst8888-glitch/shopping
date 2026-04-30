@@ -64,10 +64,20 @@ export function LayoutRenderer({
           }
 
           case 'categories':
-            return <CategoriesSection key={section.id} />
+            return (
+              <CategoriesSection
+                key={section.id}
+                categoryIds={design?.display_category_ids}
+              />
+            )
 
           case 'featured':
-            return <FeaturedSection key={section.id} />
+            return (
+              <FeaturedSection
+                key={section.id}
+                categoryId={design?.featured_category_id}
+              />
+            )
 
           case 'brands':
             return (

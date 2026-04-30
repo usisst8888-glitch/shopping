@@ -71,6 +71,8 @@ export type SiteDesign = {
   show_brands_section: boolean
   brands_list: string[]
   homepage_layout: LayoutSection[] | null
+  display_category_ids: string[]
+  featured_category_id: string | null
   seo_title: string | null
   seo_description: string | null
   seo_keywords: string | null

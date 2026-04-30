@@ -1,14 +1,38 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 
-export async function FeaturedSection() {
+export async function FeaturedSection({
+  categoryId,
+}: {
+  categoryId?: string | null
+}) {
   const supabase = await createClient()
-  const { data: products } = await supabase
+
+  let productIds: string[] | null = null
+
+  // 카테고리가 지정되면 해당 카테고리 상품만 가져오기
+  if (categoryId) {
+    const { data: relations } = await supabase
+      .from('product_categories')
+      .select('product_id')
+      .eq('category_id', categoryId)
+
+    productIds = (relations ?? []).map((r) => r.product_id)
+    if (productIds.length === 0) return null
+  }
+
+  let query = supabase
     .from('products')
     .select('id, name, slug, price, thumbnail_url')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(8)
+
+  if (productIds) {
+    query = query.in('id', productIds)
+  }
+
+  const { data: products } = await query
 
   if (!products || products.length === 0) return null
 
