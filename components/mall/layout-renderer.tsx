@@ -4,6 +4,7 @@ import { HeroDefault } from './hero-default'
 import { BannerSection } from './banner-section'
 import { CategoriesSection } from './categories-section'
 import { FeaturedSection } from './featured-section'
+import { CategoryProductsSection } from './category-products-section'
 import { BrandsSection } from './brands-section'
 
 export function LayoutRenderer({
@@ -72,7 +73,12 @@ export function LayoutRenderer({
             )
 
           case 'featured':
-            return (
+            return design?.display_category_ids && design.display_category_ids.length > 0 ? (
+              <CategoryProductsSection
+                key={section.id}
+                categoryIds={design.display_category_ids}
+              />
+            ) : (
               <FeaturedSection
                 key={section.id}
                 categoryId={design?.featured_category_id}
