@@ -10,40 +10,74 @@ export async function FeaturedSection({
 }) {
   const supabase = await createClient()
 
-  let productIds: string[] | null = null
-
-  // 카테고리가 지정되면 해당 카테고리 상품만 가져오기
   if (categoryId) {
+    // 해당 카테고리 + 하위 카테고리 ID 수집
+    const { data: children } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('parent_id', categoryId)
+
+    const allCatIds = [categoryId, ...(children ?? []).map((c) => c.id)]
+
+    // 해당 카테고리들의 상품 ID
     const { data: relations } = await supabase
       .from('product_categories')
       .select('product_id')
-      .eq('category_id', categoryId)
+      .in('category_id', allCatIds)
 
-    productIds = (relations ?? []).map((r) => r.product_id)
+    const productIds = [...new Set((relations ?? []).map((r) => r.product_id))]
     if (productIds.length === 0) return null
+
+    // 최신 8개만
+    const { data: products } = await supabase
+      .from('products')
+      .select('id, name, slug, price, thumbnail_url')
+      .in('id', productIds.slice(0, 100))
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(8)
+
+    if (!products || products.length === 0) return null
+
+    return <ProductGrid products={products} label={label} categoryId={categoryId} />
   }
 
-  let query = supabase
+  // 카테고리 미지정 시 전체 최신 상품
+  const { data: products } = await supabase
     .from('products')
     .select('id, name, slug, price, thumbnail_url')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(8)
 
-  if (productIds) {
-    query = query.in('id', productIds)
-  }
-
-  const { data: products } = await query
-
   if (!products || products.length === 0) return null
 
+  return <ProductGrid products={products} label={label} />
+}
+
+function ProductGrid({
+  products,
+  label,
+  categoryId,
+}: {
+  products: { id: string; name: string; slug: string | null; price: number; thumbnail_url: string | null }[]
+  label?: string
+  categoryId?: string
+}) {
   return (
-    <section className="bg-zinc-50 py-16">
+    <section className="py-12">
       <div className="mx-auto max-w-7xl px-4">
-        <h2 className="mb-8 text-center text-2xl font-bold text-zinc-900">
-          {label || '인기 상품'}
-        </h2>
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-zinc-900">{label || '인기 상품'}</h2>
+          {categoryId && (
+            <Link
+              href={`/category/${categoryId}`}
+              className="text-sm text-zinc-500 hover:text-zinc-900"
+            >
+              전체보기
+            </Link>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {products.map((product) => (
             <Link
@@ -63,7 +97,7 @@ export async function FeaturedSection({
                 )}
               </div>
               <div className="p-4">
-                <p className="text-sm font-medium text-zinc-900 group-hover:underline">
+                <p className="text-sm font-medium text-zinc-900 group-hover:underline line-clamp-1">
                   {product.name}
                 </p>
                 <p className="mt-2 text-sm font-bold text-zinc-900">
