@@ -39,9 +39,6 @@ export async function CategoriesSection({
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-16">
-      <h2 className="mb-8 text-center text-2xl font-bold text-zinc-900">
-        카테고리
-      </h2>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
         {sorted.map((cat, i) => (
           <Link

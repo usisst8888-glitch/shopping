@@ -37,7 +37,7 @@ export async function Header({
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md">
       {/* 상단: 로고 가운데 + 우측 로그인 */}
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 pt-5 pb-2">
-        <div className="w-32" />
+        <div className="w-36" />
         <Link href="/" className="flex items-center">
           {logoUrl ? (
             <img src={logoUrl} alt={siteName} className="h-12 w-auto max-w-[220px] object-contain" />
@@ -45,7 +45,7 @@ export async function Header({
             <span className="text-2xl font-bold tracking-widest text-zinc-900">{siteName}</span>
           )}
         </Link>
-        <div className="flex w-32 items-center justify-end gap-4">
+        <div className="flex w-36 items-center justify-end gap-4">
           <HeaderAuth user={user} isAdmin={isAdmin} />
         </div>
       </div>
