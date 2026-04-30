@@ -6,6 +6,7 @@ import type {
   Banner,
   LayoutSection,
   BannerSectionConfig,
+  FeaturedSectionConfig,
 } from '@/lib/types/design'
 import { saveLayout } from './actions'
 import { BannerPickerModal } from './banner-picker-modal'
@@ -14,14 +15,23 @@ function generateId() {
   return `section-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
 
+type CategoryOption = {
+  id: string
+  name: string
+  level: number
+  parent_id: string | null
+}
+
 export function LayoutManager({
   siteId,
   layout: initialLayout,
   banners,
+  categories: allCategories,
 }: {
   siteId: string
   layout: LayoutSection[]
   banners: Banner[]
+  categories: CategoryOption[]
 }) {
   const [sections, setSections] = useState<LayoutSection[]>(initialLayout)
   const [saving, setSaving] = useState(false)
@@ -82,6 +92,9 @@ export function LayoutManager({
     setSections((prev) => prev.filter((_, i) => i !== idx))
   }
 
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false)
+  const [editingFeaturedIndex, setEditingFeaturedIndex] = useState<number | null>(null)
+
   const addSection = (type: LayoutSection['type']) => {
     const id = generateId()
     let newSection: LayoutSection
@@ -95,12 +108,39 @@ export function LayoutManager({
         display: 'carousel',
         bannerIds: [],
       }
+    } else if (type === 'featured') {
+      // 인기상품은 카테고리 선택 모달을 먼저 보여줌
+      setShowAddMenu(false)
+      setShowCategoryPicker(true)
+      return
     } else {
       newSection = { id, type, visible: true } as LayoutSection
     }
 
     setSections((prev) => [...prev, newSection])
     setShowAddMenu(false)
+  }
+
+  const addFeaturedWithCategory = (categoryId: string, categoryName: string) => {
+    const id = generateId()
+    const newSection: FeaturedSectionConfig = {
+      id,
+      type: 'featured',
+      visible: true,
+      categoryId,
+      label: categoryName,
+    }
+    setSections((prev) => [...prev, newSection])
+    setShowCategoryPicker(false)
+  }
+
+  const updateFeaturedCategory = (idx: number, categoryId: string, categoryName: string) => {
+    setSections((prev) =>
+      prev.map((s, i) =>
+        i === idx ? { ...s, categoryId, label: categoryName } as FeaturedSectionConfig : s
+      )
+    )
+    setEditingFeaturedIndex(null)
   }
 
   const openBannerPicker = (idx: number) => {
@@ -219,7 +259,7 @@ export function LayoutManager({
                           : section.type === 'categories'
                             ? '카테고리'
                             : section.type === 'featured'
-                              ? '인기 상품'
+                              ? ((section as FeaturedSectionConfig).label || '인기 상품')
                               : '브랜드'}
                       </span>
                       {isBanner && (
@@ -228,6 +268,14 @@ export function LayoutManager({
                           className="rounded bg-white/20 px-1.5 py-0.5 text-[9px] text-white hover:bg-white/30"
                         >
                           편집
+                        </button>
+                      )}
+                      {section.type === 'featured' && (
+                        <button
+                          onClick={() => setEditingFeaturedIndex(idx)}
+                          className="rounded bg-white/20 px-1.5 py-0.5 text-[9px] text-white hover:bg-white/30"
+                        >
+                          카테고리 변경
                         </button>
                       )}
                       <button
@@ -361,6 +409,49 @@ export function LayoutManager({
           }}
         />
       )}
+
+      {/* 카테고리 선택 모달 (인기상품용) */}
+      {(showCategoryPicker || editingFeaturedIndex !== null) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 max-h-[70vh] w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="border-b border-zinc-100 px-6 py-4">
+              <h3 className="text-lg font-semibold text-zinc-900">카테고리 선택</h3>
+              <p className="mt-1 text-sm text-zinc-500">인기상품에 표시할 카테고리를 선택하세요</p>
+            </div>
+            <div className="max-h-[50vh] overflow-y-auto p-4">
+              <div className="space-y-1">
+                {allCategories.filter(c => c.level === 1).map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      if (editingFeaturedIndex !== null) {
+                        updateFeaturedCategory(editingFeaturedIndex, cat.id, cat.name)
+                      } else {
+                        addFeaturedWithCategory(cat.id, cat.name)
+                      }
+                    }}
+                    className="flex w-full items-center rounded-lg px-4 py-3 text-left text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="border-t border-zinc-100 px-6 py-3">
+              <button
+                onClick={() => {
+                  setShowCategoryPicker(false)
+                  setEditingFeaturedIndex(null)
+                }}
+                className="w-full rounded-lg border border-zinc-300 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -390,7 +481,7 @@ function SectionPreview({
     case 'categories':
       return <CategoriesPreview />
     case 'featured':
-      return <FeaturedPreview />
+      return <FeaturedPreview label={(section as FeaturedSectionConfig).label} />
     case 'brands':
       return <BrandsPreview />
     default:
@@ -505,11 +596,11 @@ function CategoriesPreview() {
   )
 }
 
-function FeaturedPreview() {
+function FeaturedPreview({ label }: { label?: string }) {
   return (
     <div className="bg-zinc-50 px-8 py-8">
       <p className="mb-4 text-center text-sm font-bold text-zinc-700">
-        인기 상품
+        {label || '인기 상품'}
       </p>
       <div className="grid grid-cols-4 gap-3">
         {Array.from({ length: 4 }).map((_, i) => (

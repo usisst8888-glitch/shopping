@@ -1,10 +1,9 @@
-import type { LayoutSection, Banner, SiteDesign, BannerSectionConfig } from '@/lib/types/design'
+import type { LayoutSection, Banner, SiteDesign, BannerSectionConfig, FeaturedSectionConfig } from '@/lib/types/design'
 import { HeroBannerCarousel } from './hero-banner-carousel'
 import { HeroDefault } from './hero-default'
 import { BannerSection } from './banner-section'
 import { CategoriesSection } from './categories-section'
 import { FeaturedSection } from './featured-section'
-import { CategoryProductsSection } from './category-products-section'
 import { BrandsSection } from './brands-section'
 
 export function LayoutRenderer({
@@ -72,18 +71,16 @@ export function LayoutRenderer({
               />
             )
 
-          case 'featured':
-            return design?.display_category_ids && design.display_category_ids.length > 0 ? (
-              <CategoryProductsSection
-                key={section.id}
-                categoryIds={design.display_category_ids}
-              />
-            ) : (
+          case 'featured': {
+            const featuredCfg = section as FeaturedSectionConfig
+            return (
               <FeaturedSection
                 key={section.id}
-                categoryId={design?.featured_category_id}
+                categoryId={featuredCfg.categoryId || null}
+                label={featuredCfg.label}
               />
             )
+          }
 
           case 'brands':
             return (

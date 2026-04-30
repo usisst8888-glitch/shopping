@@ -3,8 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function FeaturedSection({
   categoryId,
+  label,
 }: {
   categoryId?: string | null
+  label?: string
 }) {
   const supabase = await createClient()
 
@@ -40,7 +42,7 @@ export async function FeaturedSection({
     <section className="bg-zinc-50 py-16">
       <div className="mx-auto max-w-7xl px-4">
         <h2 className="mb-8 text-center text-2xl font-bold text-zinc-900">
-          인기 상품
+          {label || '인기 상품'}
         </h2>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {products.map((product) => (

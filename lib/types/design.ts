@@ -41,6 +41,8 @@ export type CategoriesSectionConfig = LayoutSectionBase & {
 
 export type FeaturedSectionConfig = LayoutSectionBase & {
   type: 'featured'
+  categoryId?: string
+  label?: string
 }
 
 export type BrandsSectionConfig = LayoutSectionBase & {
