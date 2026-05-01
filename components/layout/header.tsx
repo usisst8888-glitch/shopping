@@ -53,12 +53,13 @@ export async function Header({
       {/* 하단: 메뉴 가운데 */}
       {(items.length > 0 || (categories && categories.length > 0)) && (
         <div>
-          <nav className="mx-auto flex max-w-7xl items-center justify-center gap-8 px-4 pb-3 pt-1">
+          <nav className="mx-auto flex max-w-7xl items-center justify-center px-4 pb-3 pt-1">
             {items.map((item, index) => (
               <Link
                 key={`${item.href}-${index}`}
                 href={item.href}
-                className="text-sm text-zinc-600 hover:text-zinc-900"
+                className="px-5 text-[13px] font-bold text-[#484848] hover:text-zinc-900"
+                style={{ height: '50px', display: 'flex', alignItems: 'center' }}
               >
                 {item.label}
               </Link>

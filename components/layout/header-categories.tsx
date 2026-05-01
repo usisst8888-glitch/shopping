@@ -23,7 +23,10 @@ export function HeaderCategories({ categories }: { categories: Category[] }) {
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <button className="text-sm text-zinc-600 hover:text-zinc-900">
+      <button
+        className="px-5 text-[13px] font-bold text-[#484848] hover:text-zinc-900"
+        style={{ height: '50px', display: 'flex', alignItems: 'center' }}
+      >
         카테고리
       </button>
       {open && (
