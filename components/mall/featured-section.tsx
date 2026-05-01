@@ -90,7 +90,7 @@ function ProductGrid({
                   <img
                     src={product.thumbnail_url}
                     alt={product.name}
-                    className="h-full w-full object-cover transition group-hover:scale-105"
+                    className="w-full object-cover transition group-hover:scale-105"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-xs text-zinc-400">이미지 준비중</div>
