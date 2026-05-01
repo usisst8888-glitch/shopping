@@ -67,16 +67,8 @@ function ProductGrid({
   return (
     <section className="py-12">
       <div className="mx-auto max-w-7xl px-4">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6">
           <h2 className="w-full cursor-pointer text-[17px] font-bold text-zinc-900">{label || '인기 상품'}</h2>
-          {categoryId && (
-            <Link
-              href={`/category/${categoryId}`}
-              className="text-sm text-zinc-500 hover:text-zinc-900"
-            >
-              전체보기
-            </Link>
-          )}
         </div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
           {products.map((product) => (
@@ -107,6 +99,16 @@ function ProductGrid({
             </Link>
           ))}
         </div>
+        {categoryId && (
+          <div className="mt-8 text-center">
+            <Link
+              href={`/category/${categoryId}`}
+              className="inline-block rounded-[9px] border border-[#2c2c2c] px-5 py-2 text-[14px] text-[#2c2c2c]"
+            >
+              더보기
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   )
