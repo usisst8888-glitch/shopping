@@ -68,7 +68,7 @@ function ProductGrid({
     <section className="py-12">
       <div className="mx-auto max-w-7xl px-4">
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-zinc-900">{label || '인기 상품'}</h2>
+          <h2 className="w-full cursor-pointer text-[17px] font-bold text-zinc-900">{label || '인기 상품'}</h2>
           {categoryId && (
             <Link
               href={`/category/${categoryId}`}
