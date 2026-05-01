@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getSiteConfig } from '@/lib/site'
+import { ProductGallery } from '@/components/mall/product-gallery'
 import type { Metadata } from 'next'
 
 export async function generateMetadata({
@@ -84,37 +85,7 @@ export default async function ProductPage({
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
         {/* 이미지 갤러리 */}
         <div>
-          {allImages.length > 0 ? (
-            <div className="space-y-3">
-              <div className="overflow-hidden rounded-xl bg-zinc-100">
-                <img
-                  src={allImages[0]}
-                  alt={product.name}
-                  className="w-full object-cover"
-                />
-              </div>
-              {allImages.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto">
-                  {allImages.slice(1).map((url, idx) => (
-                    <div
-                      key={idx}
-                      className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-200"
-                    >
-                      <img
-                        src={url}
-                        alt={`${product.name} ${idx + 2}`}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex h-80 items-center justify-center rounded-xl bg-zinc-100 text-zinc-400">
-              이미지 준비중
-            </div>
-          )}
+          <ProductGallery images={allImages} productName={product.name} />
         </div>
 
         {/* 상품 정보 */}
