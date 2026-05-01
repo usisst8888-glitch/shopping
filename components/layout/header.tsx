@@ -34,7 +34,7 @@ export async function Header({
   const items = navItems && navItems.length > 0 ? navItems : []
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-zinc-900 bg-white/80 backdrop-blur-md">
       {/* 상단: 로고 가운데 + 우측 로그인 */}
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 pt-5 pb-2">
         <div className="w-50" />
