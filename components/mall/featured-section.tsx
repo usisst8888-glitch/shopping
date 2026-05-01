@@ -78,29 +78,29 @@ function ProductGrid({
             </Link>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
           {products.map((product) => (
             <Link
               key={product.id}
               href={`/product/${product.slug || product.id}`}
-              className="group overflow-hidden rounded-xl bg-white shadow-sm transition hover:shadow-md"
+              className="group"
             >
-              <div className="flex h-48 items-center justify-center bg-zinc-100">
+              <div className="aspect-square overflow-hidden bg-zinc-100">
                 {product.thumbnail_url ? (
                   <img
                     src={product.thumbnail_url}
                     alt={product.name}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover transition group-hover:scale-105"
                   />
                 ) : (
-                  <span className="text-xs text-zinc-400">이미지 준비중</span>
+                  <div className="flex h-full items-center justify-center text-xs text-zinc-400">이미지 준비중</div>
                 )}
               </div>
-              <div className="p-4">
-                <p className="text-sm font-medium text-zinc-900 group-hover:underline line-clamp-1">
+              <div className="mt-3">
+                <p className="text-sm text-zinc-900 line-clamp-1">
                   {product.name}
                 </p>
-                <p className="mt-2 text-sm font-bold text-zinc-900">
+                <p className="mt-1 text-sm font-bold text-zinc-900">
                   {product.price.toLocaleString()}원
                 </p>
               </div>
