@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getSiteConfig } from '@/lib/site'
 import { ProductGallery } from '@/components/mall/product-gallery'
+import { AddToCartButton } from '@/components/mall/add-to-cart-button'
 import type { Metadata } from 'next'
 
 export async function generateMetadata({
@@ -121,9 +122,7 @@ export default async function ProductPage({
             <button className="flex-1 rounded-lg bg-zinc-900 py-3 text-sm font-medium text-white hover:bg-zinc-800">
               구매하기
             </button>
-            <button className="rounded-lg border border-zinc-300 px-6 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
-              장바구니
-            </button>
+            <AddToCartButton productId={product.id} />
           </div>
         </div>
       </div>

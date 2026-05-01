@@ -20,14 +20,20 @@ export function HeaderAuth({ user, isAdmin }: { user: User | null; isAdmin: bool
         {isAdmin && (
           <Link
             href="/admin"
-            className="text-sm font-medium text-zinc-900 hover:underline"
+            className="text-[12px] text-[#2a2a2a] hover:underline"
           >
-            관리자 대시보드
+            관리자
           </Link>
         )}
+        <Link
+          href="/cart"
+          className="text-[12px] text-[#2a2a2a] hover:underline"
+        >
+          장바구니
+        </Link>
         <button
           onClick={handleLogout}
-          className="text-sm text-zinc-600 hover:text-zinc-900"
+          className="text-[12px] text-[#2a2a2a] hover:underline"
         >
           로그아웃
         </button>
@@ -36,8 +42,16 @@ export function HeaderAuth({ user, isAdmin }: { user: User | null; isAdmin: bool
   }
 
   return (
-    <Link href="/login" className="text-sm text-zinc-600 hover:text-zinc-900">
-      로그인
-    </Link>
+    <>
+      <Link href="/login" className="text-[12px] text-[#2a2a2a] hover:underline">
+        로그인
+      </Link>
+      <Link href="/signup" className="text-[12px] text-[#2a2a2a] hover:underline">
+        회원가입
+      </Link>
+      <Link href="/cart" className="text-[12px] text-[#2a2a2a] hover:underline">
+        장바구니
+      </Link>
+    </>
   )
 }
