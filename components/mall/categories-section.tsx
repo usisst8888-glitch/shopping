@@ -39,7 +39,7 @@ export async function CategoriesSection({
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-16">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {sorted.map((cat, i) => (
           <Link
             key={cat!.id}
