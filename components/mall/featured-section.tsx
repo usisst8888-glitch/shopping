@@ -10,12 +10,24 @@ export async function FeaturedSection({
 }) {
   const supabase = await createClient()
 
-  const { data: children } = await supabase
+  // 2차 + 3차 하위 카테고리 모두 포함
+  const { data: level2 } = await supabase
     .from('categories')
     .select('id')
     .eq('parent_id', categoryId)
 
-  const catIds = [categoryId, ...(children ?? []).map((c) => c.id)]
+  const level2Ids = (level2 ?? []).map((c) => c.id)
+
+  let level3Ids: string[] = []
+  if (level2Ids.length > 0) {
+    const { data: level3 } = await supabase
+      .from('categories')
+      .select('id')
+      .in('parent_id', level2Ids)
+    level3Ids = (level3 ?? []).map((c) => c.id)
+  }
+
+  const catIds = [categoryId, ...level2Ids, ...level3Ids]
 
   const { data: relations } = await supabase
     .from('product_categories')
