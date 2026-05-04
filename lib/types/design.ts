@@ -35,8 +35,16 @@ export type BannerSectionConfig = LayoutSectionBase & {
   bannerIds: string[]
 }
 
+export type CategoryCard = {
+  id: string
+  image: string
+  text: string
+  href: string
+}
+
 export type CategoriesSectionConfig = LayoutSectionBase & {
   type: 'categories'
+  cards?: CategoryCard[]
 }
 
 export type FeaturedSectionConfig = LayoutSectionBase & {

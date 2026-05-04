@@ -7,6 +7,8 @@ import type {
   LayoutSection,
   BannerSectionConfig,
   FeaturedSectionConfig,
+  CategoriesSectionConfig,
+  CategoryCard,
 } from '@/lib/types/design'
 import { saveLayout } from './actions'
 import { BannerPickerModal } from './banner-picker-modal'
@@ -43,6 +45,9 @@ export function LayoutManager({
     useState<BannerSectionConfig | null>(null)
   const [pickerIndex, setPickerIndex] = useState<number>(-1)
   const [showAddMenu, setShowAddMenu] = useState(false)
+  const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null)
+  const [categoryCards, setCategoryCards] = useState<CategoryCard[]>([])
+  const [uploadingCardImage, setUploadingCardImage] = useState(false)
 
   // 드래그 상태
   const [dragIndex, setDragIndex] = useState<number | null>(null)
@@ -270,6 +275,17 @@ export function LayoutManager({
                           편집
                         </button>
                       )}
+                      {section.type === 'categories' && (
+                        <button
+                          onClick={() => {
+                            setCategoryCards((section as CategoriesSectionConfig).cards ?? [])
+                            setEditingCategoryIndex(idx)
+                          }}
+                          className="rounded bg-white/20 px-1.5 py-0.5 text-[9px] text-white hover:bg-white/30"
+                        >
+                          편집
+                        </button>
+                      )}
                       {section.type === 'featured' && (
                         <button
                           onClick={() => setEditingFeaturedIndex(idx)}
@@ -451,6 +467,112 @@ export function LayoutManager({
                 className="w-full rounded-lg border border-zinc-300 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50"
               >
                 취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 카테고리 카드 편집 모달 */}
+      {editingCategoryIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="border-b border-zinc-100 px-6 py-4">
+              <h3 className="text-lg font-semibold text-zinc-900">카테고리 카드 편집</h3>
+              <p className="mt-1 text-sm text-zinc-500">이미지, 텍스트, 링크를 설정하세요</p>
+            </div>
+            <div className="max-h-[55vh] overflow-y-auto p-4 space-y-3">
+              {categoryCards.map((card, ci) => (
+                <div key={card.id} className="flex gap-3 rounded-lg border border-zinc-200 p-3">
+                  {/* 이미지 */}
+                  <div className="flex-shrink-0">
+                    <label className="block h-20 w-20 cursor-pointer overflow-hidden rounded-lg bg-zinc-100">
+                      {card.image ? (
+                        <img src={card.image} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="flex h-full items-center justify-center text-[10px] text-zinc-400">이미지</span>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          setUploadingCardImage(true)
+                          const formData = new FormData()
+                          formData.set('file', file)
+                          const res = await fetch('/api/upload', { method: 'POST', body: formData })
+                          const result = await res.json()
+                          if (result.url) {
+                            setCategoryCards(prev => prev.map((c, i) => i === ci ? { ...c, image: result.url } : c))
+                          }
+                          setUploadingCardImage(false)
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {/* 텍스트 + 링크 */}
+                  <div className="flex-1 space-y-2">
+                    <input
+                      type="text"
+                      value={card.text}
+                      onChange={(e) => setCategoryCards(prev => prev.map((c, i) => i === ci ? { ...c, text: e.target.value } : c))}
+                      placeholder="텍스트"
+                      className="w-full rounded border border-zinc-200 px-2 py-1.5 text-sm"
+                    />
+                    <input
+                      type="text"
+                      value={card.href}
+                      onChange={(e) => setCategoryCards(prev => prev.map((c, i) => i === ci ? { ...c, href: e.target.value } : c))}
+                      placeholder="링크 (예: /category/신발)"
+                      className="w-full rounded border border-zinc-200 px-2 py-1.5 text-sm"
+                    />
+                  </div>
+                  {/* 삭제 */}
+                  <button
+                    onClick={() => setCategoryCards(prev => prev.filter((_, i) => i !== ci))}
+                    className="flex-shrink-0 text-xs text-red-400 hover:text-red-600"
+                  >
+                    삭제
+                  </button>
+                </div>
+              ))}
+
+              {/* 카드 추가 */}
+              <button
+                type="button"
+                onClick={() => setCategoryCards(prev => [...prev, {
+                  id: `card-${Date.now()}`,
+                  image: '',
+                  text: '',
+                  href: '/',
+                }])}
+                className="w-full rounded-lg border-2 border-dashed border-zinc-300 py-3 text-sm text-zinc-500 hover:border-zinc-400"
+              >
+                + 카드 추가
+              </button>
+            </div>
+            <div className="flex gap-3 border-t border-zinc-100 px-6 py-4">
+              <button
+                onClick={() => setEditingCategoryIndex(null)}
+                className="flex-1 rounded-lg border border-zinc-300 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50"
+              >
+                취소
+              </button>
+              <button
+                disabled={uploadingCardImage}
+                onClick={() => {
+                  setSections(prev => prev.map((s, i) =>
+                    i === editingCategoryIndex
+                      ? { ...s, cards: categoryCards } as CategoriesSectionConfig
+                      : s
+                  ))
+                  setEditingCategoryIndex(null)
+                }}
+                className="flex-1 rounded-lg bg-zinc-900 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+              >
+                {uploadingCardImage ? '업로드 중...' : '저장'}
               </button>
             </div>
           </div>

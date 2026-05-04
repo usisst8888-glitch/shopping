@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import type { CategoryCard } from '@/lib/types/design'
 
 const gradients = [
   'from-amber-100 to-amber-200',
@@ -10,56 +10,36 @@ const gradients = [
   'from-violet-100 to-violet-200',
 ]
 
-export async function CategoriesSection({
-  categoryIds,
+export function CategoriesSection({
+  cards,
 }: {
-  categoryIds?: string[]
+  cards?: CategoryCard[]
 }) {
-  const supabase = await createClient()
-
-  let query = supabase
-    .from('categories')
-    .select('id, name, slug, image_url')
-    .order('sort_order')
-
-  if (categoryIds && categoryIds.length > 0) {
-    query = query.in('id', categoryIds)
-  } else {
-    query = query.eq('is_main', true)
-  }
-
-  const { data: categories } = await query
-
-  if (!categories || categories.length === 0) return null
-
-  // categoryIds 순서대로 정렬
-  const sorted = categoryIds && categoryIds.length > 0
-    ? categoryIds.map((id) => categories.find((c) => c.id === id)).filter(Boolean)
-    : categories
+  if (!cards || cards.length === 0) return null
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-16">
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {sorted.map((cat, i) => (
+        {cards.map((card, i) => (
           <Link
-            key={cat!.id}
-            href={`/category/${cat!.slug || cat!.id}`}
+            key={card.id}
+            href={card.href || '/'}
             className={`group relative flex h-32 items-center justify-center overflow-hidden rounded-xl ${
-              cat!.image_url ? '' : `bg-gradient-to-br ${gradients[i % gradients.length]}`
+              card.image ? '' : `bg-gradient-to-br ${gradients[i % gradients.length]}`
             } text-sm font-medium transition hover:scale-105`}
           >
-            {cat!.image_url ? (
+            {card.image ? (
               <>
                 <img
-                  src={cat!.image_url}
-                  alt={cat!.name}
+                  src={card.image}
+                  alt={card.text}
                   className="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-black/30" />
-                <span className="relative text-white drop-shadow-sm">{cat!.name}</span>
+                <span className="relative text-white drop-shadow-sm">{card.text}</span>
               </>
             ) : (
-              <span className="text-zinc-700">{cat!.name}</span>
+              <span className="text-zinc-700">{card.text}</span>
             )}
           </Link>
         ))}

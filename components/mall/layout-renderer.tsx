@@ -1,4 +1,4 @@
-import type { LayoutSection, Banner, SiteDesign, BannerSectionConfig, FeaturedSectionConfig } from '@/lib/types/design'
+import type { LayoutSection, Banner, SiteDesign, BannerSectionConfig, FeaturedSectionConfig, CategoriesSectionConfig } from '@/lib/types/design'
 import { HeroBannerCarousel } from './hero-banner-carousel'
 import { HeroDefault } from './hero-default'
 import { BannerSection } from './banner-section'
@@ -63,13 +63,15 @@ export function LayoutRenderer({
             )
           }
 
-          case 'categories':
+          case 'categories': {
+            const catCfg = section as CategoriesSectionConfig
             return (
               <CategoriesSection
                 key={section.id}
-                categoryIds={design?.display_category_ids}
+                cards={catCfg.cards}
               />
             )
+          }
 
           case 'featured': {
             const cfg = section as FeaturedSectionConfig
