@@ -25,7 +25,7 @@ export function HeroBannerCarousel({ banners }: { banners: Banner[] }) {
 
   return (
     <section
-      className="relative overflow-hidden"
+      className="relative mx-auto max-w-[1920px] overflow-hidden"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
