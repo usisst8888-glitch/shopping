@@ -10,45 +10,45 @@ export async function FeaturedSection({
 }) {
   const supabase = await createClient()
 
-  // 2차 + 3차 하위 카테고리 모두 포함
+  // 해당 카테고리 + 하위 카테고리의 category_no 수집
+  const { data: self } = await supabase
+    .from('categories')
+    .select('category_no, slug')
+    .eq('id', categoryId)
+    .single()
+
   const { data: level2 } = await supabase
     .from('categories')
-    .select('id')
+    .select('id, category_no')
     .eq('parent_id', categoryId)
 
   const level2Ids = (level2 ?? []).map((c) => c.id)
 
-  let level3Ids: string[] = []
+  let level3Nos: string[] = []
   if (level2Ids.length > 0) {
     const { data: level3 } = await supabase
       .from('categories')
-      .select('id')
+      .select('category_no')
       .in('parent_id', level2Ids)
-    level3Ids = (level3 ?? []).map((c) => c.id)
+    level3Nos = (level3 ?? []).map((c) => c.category_no).filter(Boolean) as string[]
   }
 
-  const catIds = [categoryId, ...level2Ids, ...level3Ids]
+  // 모든 category_no 수집
+  const allNos = [
+    self?.category_no,
+    ...(level2 ?? []).map((c) => c.category_no),
+    ...level3Nos,
+  ].filter(Boolean) as string[]
 
-  const { data: relations } = await supabase
-    .from('product_categories')
-    .select('product_id')
-    .in('category_id', catIds)
+  if (allNos.length === 0) return null
 
-  const productIds = [...new Set((relations ?? []).map((r) => r.product_id))]
-  if (productIds.length === 0) return null
-
-  const { data: catData } = await supabase
-    .from('categories')
-    .select('slug')
-    .eq('id', categoryId)
-    .single()
-
+  // category_nos 배열에 해당 번호가 포함된 상품 조회
   const { data: products } = await supabase
     .from('products')
     .select('id, name, slug, price, thumbnail_url')
-    .in('id', productIds.slice(0, 100))
+    .overlaps('category_nos', allNos)
     .eq('is_active', true)
-    .order('created_at', { ascending: false })
+    .order('product_no', { ascending: false, nullsFirst: false })
     .limit(8)
 
   if (!products || products.length === 0) return null
@@ -86,7 +86,7 @@ export async function FeaturedSection({
         </div>
         <div className="mt-8 text-center">
           <Link
-            href={`/category/${catData?.slug || categoryId}`}
+            href={`/category/${self?.slug || categoryId}`}
             className="inline-block rounded-[9px] border border-[#2c2c2c] px-5 py-2 text-[14px] text-[#2c2c2c]"
           >
             더보기
