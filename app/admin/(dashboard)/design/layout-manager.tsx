@@ -419,8 +419,8 @@ export function LayoutManager({
               <p className="mt-1 text-sm text-zinc-500">인기상품에 표시할 카테고리를 선택하세요</p>
             </div>
             <div className="max-h-[50vh] overflow-y-auto p-4">
-              <div className="space-y-1">
-                {allCategories.filter(c => c.level === 1).map((cat) => (
+              <div className="space-y-0.5">
+                {allCategories.map((cat) => (
                   <button
                     key={cat.id}
                     type="button"
@@ -431,9 +431,13 @@ export function LayoutManager({
                         addFeaturedWithCategory(cat.id, cat.name)
                       }
                     }}
-                    className="flex w-full items-center rounded-lg px-4 py-3 text-left text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
+                    className="flex w-full items-center rounded-lg px-4 py-2.5 text-left text-sm text-zinc-700 transition hover:bg-zinc-100"
+                    style={{ paddingLeft: `${(cat.level - 1) * 20 + 16}px` }}
                   >
-                    {cat.name}
+                    <span className={cat.level === 1 ? 'font-bold' : cat.level === 2 ? 'font-medium' : ''}>
+                      {cat.name}
+                    </span>
+                    <span className="ml-2 text-[10px] text-zinc-400">{cat.level}차</span>
                   </button>
                 ))}
               </div>

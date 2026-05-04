@@ -444,62 +444,6 @@ export function DesignManager({
         </div>
       </div>
 
-      {/* 메인 카테고리 선택 */}
-      <div className="rounded-xl bg-white p-6 shadow-sm">
-        <h3 className="mb-4 text-lg font-semibold text-zinc-900">메인 카테고리 선택</h3>
-        <p className="mb-4 text-sm text-zinc-500">
-          홈페이지 카테고리 섹션에 표시할 카테고리를 선택하세요.
-        </p>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4">
-          {level1Categories.map((cat) => {
-            const isSelected = displayCategoryIds.includes(cat.id)
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => {
-                  setDisplayCategoryIds((prev) =>
-                    isSelected
-                      ? prev.filter((id) => id !== cat.id)
-                      : [...prev, cat.id]
-                  )
-                }}
-                className={`rounded-lg border px-4 py-3 text-left text-sm font-medium transition ${
-                  isSelected
-                    ? 'border-zinc-900 bg-zinc-900 text-white'
-                    : 'border-zinc-200 text-zinc-700 hover:border-zinc-400'
-                }`}
-              >
-                {cat.name}
-              </button>
-            )
-          })}
-        </div>
-        {displayCategoryIds.length > 0 && (
-          <p className="mt-3 text-xs text-zinc-500">{displayCategoryIds.length}개 선택됨</p>
-        )}
-      </div>
-
-      {/* 인기상품 카테고리 */}
-      <div className="rounded-xl bg-white p-6 shadow-sm">
-        <h3 className="mb-4 text-lg font-semibold text-zinc-900">인기상품 카테고리</h3>
-        <p className="mb-4 text-sm text-zinc-500">
-          홈페이지 인기상품 섹션에 표시할 카테고리를 선택하세요. 해당 카테고리의 상품이 표시됩니다.
-        </p>
-        <select
-          value={featuredCategoryId}
-          onChange={(e) => setFeaturedCategoryId(e.target.value)}
-          className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-        >
-          <option value="">전체 상품 (최신순)</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {'  '.repeat(cat.level - 1)}{cat.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {/* 저장 버튼 */}
       <div className="flex justify-end">
         <button

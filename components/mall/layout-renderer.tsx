@@ -71,16 +71,8 @@ export function LayoutRenderer({
               />
             )
 
-          case 'featured': {
-            const featuredCfg = section as FeaturedSectionConfig
-            return (
-              <FeaturedSection
-                key={section.id}
-                categoryId={featuredCfg.categoryId || null}
-                label={featuredCfg.label}
-              />
-            )
-          }
+          case 'featured':
+            return <FeaturedSection key={section.id} />
 
           case 'brands':
             return (
