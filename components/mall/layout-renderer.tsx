@@ -71,8 +71,17 @@ export function LayoutRenderer({
               />
             )
 
-          case 'featured':
-            return <FeaturedSection key={section.id} />
+          case 'featured': {
+            const cfg = section as FeaturedSectionConfig
+            if (!cfg.categoryId) return null
+            return (
+              <FeaturedSection
+                key={section.id}
+                categoryId={cfg.categoryId}
+                label={cfg.label || '인기 상품'}
+              />
+            )
+          }
 
           case 'brands':
             return (
