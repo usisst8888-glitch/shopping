@@ -73,7 +73,7 @@ export async function Header({
       {/* PC 메뉴 */}
       {(items.length > 0 || (categories && categories.length > 0)) && (
         <div className="hidden md:block">
-          <nav className="mx-auto flex max-w-7xl items-center justify-center px-4 pb-3 pt-1">
+          <nav className="mx-auto flex max-w-7xl items-center justify-center px-4">
             {items.map((item, index) => (
               <Link
                 key={`${item.href}-${index}`}
