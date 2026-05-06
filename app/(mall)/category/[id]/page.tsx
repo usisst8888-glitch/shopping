@@ -26,13 +26,8 @@ export async function generateMetadata({
 
   return {
     title,
-    alternates: {
-      canonical: canonicalUrl,
-    },
-    openGraph: {
-      title,
-      url: canonicalUrl,
-    },
+    alternates: { canonical: canonicalUrl },
+    openGraph: { title, url: canonicalUrl },
   }
 }
 
@@ -41,33 +36,43 @@ export default async function CategoryPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const { id } = await params
+  const { id: rawId } = await params
+  const id = decodeURIComponent(rawId)
   const supabase = await createClient()
 
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
   const { data: category } = await supabase
     .from('categories')
-    .select('id, name, slug, level, parent_id')
+    .select('id, name, slug, category_no, level, parent_id')
     .eq(isUuid ? 'id' : 'slug', id)
     .single()
 
   if (!category) notFound()
 
-  // 하위 카테고리 포함: 현재 카테고리 + 자식 카테고리 ID 수집
+  // 하위 카테고리
   const { data: children } = await supabase
     .from('categories')
-    .select('id, name, slug')
+    .select('id, name, slug, category_no')
     .eq('parent_id', category.id)
     .order('sort_order')
 
-  const categoryIds = [category.id, ...(children ?? []).map((c) => c.id)]
+  // 3차 하위 카테고리
+  const childIds = (children ?? []).map((c) => c.id)
+  let grandChildNos: string[] = []
+  if (childIds.length > 0) {
+    const { data: grandChildren } = await supabase
+      .from('categories')
+      .select('category_no')
+      .in('parent_id', childIds)
+    grandChildNos = (grandChildren ?? []).map((c) => c.category_no).filter(Boolean) as string[]
+  }
 
-  const { data: relations } = await supabase
-    .from('product_categories')
-    .select('product_id')
-    .in('category_id', categoryIds)
-
-  const productIds = [...new Set((relations ?? []).map((r) => r.product_id))]
+  // 전체 category_no 수집
+  const allNos = [
+    category.category_no,
+    ...(children ?? []).map((c) => c.category_no),
+    ...grandChildNos,
+  ].filter(Boolean) as string[]
 
   let products: {
     id: string
@@ -77,13 +82,13 @@ export default async function CategoryPage({
     thumbnail_url: string | null
   }[] = []
 
-  if (productIds.length > 0) {
+  if (allNos.length > 0) {
     const { data } = await supabase
       .from('products')
       .select('id, name, slug, price, thumbnail_url')
-      .in('id', productIds)
+      .overlaps('category_nos', allNos)
       .eq('is_active', true)
-      .order('created_at', { ascending: false })
+      .order('product_no', { ascending: false, nullsFirst: false })
 
     products = data ?? []
   }
@@ -117,29 +122,27 @@ export default async function CategoryPage({
           <p className="text-zinc-400">이 카테고리에 등록된 상품이 없습니다.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
           {products.map((product) => (
             <Link
               key={product.id}
               href={`/product/${product.slug || product.id}`}
-              className="group overflow-hidden rounded-xl bg-white shadow-sm transition hover:shadow-md"
+              className="group"
             >
-              <div className="flex h-52 items-center justify-center bg-zinc-100">
+              <div className="aspect-square overflow-hidden bg-zinc-100">
                 {product.thumbnail_url ? (
                   <img
                     src={product.thumbnail_url}
                     alt={product.name}
-                    className="h-full w-full object-cover"
+                    className="w-full object-cover transition group-hover:scale-105"
                   />
                 ) : (
-                  <span className="text-xs text-zinc-400">이미지 준비중</span>
+                  <div className="flex h-full items-center justify-center text-xs text-zinc-400">이미지 준비중</div>
                 )}
               </div>
-              <div className="p-4">
-                <p className="text-sm font-medium text-zinc-900 group-hover:underline">
-                  {product.name}
-                </p>
-                <p className="mt-2 text-sm font-bold text-zinc-900">
+              <div className="mt-3">
+                <p className="text-sm text-zinc-900 line-clamp-1">{product.name}</p>
+                <p className="mt-1 text-sm font-bold text-zinc-900">
                   {product.price.toLocaleString()}원
                 </p>
               </div>
