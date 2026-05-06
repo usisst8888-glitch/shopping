@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { HeaderAuth } from './header-auth'
-import { HeaderCategories } from './header-categories'
+import { NavDropdown } from './nav-dropdown'
 import { MobileMenu } from './mobile-menu'
 import type { NavItem } from '@/lib/types/design'
 import { getCachedCategories } from '@/lib/site'
@@ -37,7 +37,6 @@ export async function Header({
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-900 bg-white/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 pt-5 pb-2">
-        {/* 좌측: PC 빈공간 / 모바일 햄버거 */}
         <div className="w-50">
           <MobileMenu
             user={user}
@@ -47,7 +46,6 @@ export async function Header({
           />
         </div>
 
-        {/* 로고 가운데 */}
         <Link href="/" className="flex items-center">
           {logoUrl ? (
             <img src={logoUrl} alt={siteName} className="h-12 w-auto max-w-[220px] object-contain" />
@@ -56,11 +54,9 @@ export async function Header({
           )}
         </Link>
 
-        {/* 우측: PC 로그인/장바구니 */}
         <div className="hidden w-50 items-center justify-end gap-4 md:flex">
           <HeaderAuth user={user} isAdmin={isAdmin} />
         </div>
-        {/* 모바일: 장바구니 아이콘만 */}
         <div className="flex w-50 items-center justify-end md:hidden">
           <Link href="/cart">
             <svg className="h-5 w-5 text-zinc-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -70,21 +66,23 @@ export async function Header({
         </div>
       </div>
 
-      {/* PC 메뉴 */}
-      {(items.length > 0 || (categories && categories.length > 0)) && (
+      {items.length > 0 && (
         <div className="hidden md:block">
           <nav className="mx-auto flex max-w-7xl items-center justify-center px-4">
             {items.map((item, index) => (
-              <Link
-                key={`${item.href}-${index}`}
-                href={item.href}
-                className="px-5 text-[13px] font-bold text-[#484848] hover:text-zinc-900"
-                style={{ height: '50px', display: 'flex', alignItems: 'center' }}
-              >
-                {item.label}
-              </Link>
+              item.children && item.children.length > 0 ? (
+                <NavDropdown key={`${item.href}-${index}`} item={item} />
+              ) : (
+                <Link
+                  key={`${item.href}-${index}`}
+                  href={item.href}
+                  className="px-5 text-[13px] font-bold text-[#484848] hover:text-zinc-900"
+                  style={{ height: '50px', display: 'flex', alignItems: 'center' }}
+                >
+                  {item.label}
+                </Link>
+              )
             ))}
-            <HeaderCategories categories={categories ?? []} />
           </nav>
         </div>
       )}

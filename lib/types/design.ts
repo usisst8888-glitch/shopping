@@ -16,6 +16,7 @@ export type Banner = {
 export type NavItem = {
   label: string
   href: string
+  children?: { label: string; href: string }[]
 }
 
 // ── 레이아웃 섹션 타입 ──

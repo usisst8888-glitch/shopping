@@ -310,7 +310,14 @@ export function DesignManager({
                 if (!val) return
                 if (val.startsWith('cat:')) {
                   const cat = categories.find((c) => c.id === val.slice(4))
-                  if (cat) setNavItems([...navItems, { label: cat.name, href: `/category/${cat.id}` }])
+                  if (cat) {
+                    const subs = categories.filter((c) => c.parent_id === cat.id)
+                    setNavItems([...navItems, {
+                      label: cat.name,
+                      href: `/category/${cat.id}`,
+                      children: subs.length > 0 ? subs.map((s) => ({ label: s.name, href: `/category/${s.id}` })) : undefined,
+                    }])
+                  }
                 } else if (val.startsWith('board:')) {
                   const board = boards.find((b) => b.id === val.slice(6))
                   if (board) setNavItems([...navItems, { label: board.name, href: `/board/${board.slug}` }])
@@ -343,28 +350,40 @@ export function DesignManager({
 
         <div className="space-y-3">
           {navItems.map((item, index) => (
-            <div key={index} className="flex items-center gap-3">
-              <input
-                type="text"
-                value={item.label}
-                onChange={(e) => updateNavItem(index, 'label', e.target.value)}
-                className="w-40 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                placeholder="메뉴명"
-              />
-              <input
-                type="text"
-                value={item.href}
-                onChange={(e) => updateNavItem(index, 'href', e.target.value)}
-                className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                placeholder="/category/신발 또는 /board/notice"
-              />
-              <button
-                type="button"
-                onClick={() => removeNavItem(index)}
-                className="flex-shrink-0 text-xs text-red-500 hover:underline"
-              >
-                삭제
-              </button>
+            <div key={index}>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={item.label}
+                  onChange={(e) => updateNavItem(index, 'label', e.target.value)}
+                  className="w-40 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                  placeholder="메뉴명"
+                />
+                <input
+                  type="text"
+                  value={item.href}
+                  onChange={(e) => updateNavItem(index, 'href', e.target.value)}
+                  className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                  placeholder="/category/신발 또는 /board/notice"
+                />
+                {item.children && (
+                  <span className="text-[10px] text-zinc-400">{item.children.length}개 하위</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeNavItem(index)}
+                  className="flex-shrink-0 text-xs text-red-500 hover:underline"
+                >
+                  삭제
+                </button>
+              </div>
+              {item.children && item.children.length > 0 && (
+                <div className="ml-44 mt-1 flex flex-wrap gap-1">
+                  {item.children.map((child, ci) => (
+                    <span key={ci} className="rounded bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-500">{child.label}</span>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           {navItems.length === 0 && (
