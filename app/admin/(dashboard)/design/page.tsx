@@ -28,11 +28,10 @@ export default async function DesignPage() {
     getBanners(currentSiteId),
   ])
 
-  const { data: allCategories } = await supabase
-    .from('categories')
-    .select('id, name, level, parent_id')
-    .order('level')
-    .order('sort_order')
+  const [{ data: allCategories }, { data: allBoards }] = await Promise.all([
+    supabase.from('categories').select('id, name, level, parent_id').order('level').order('sort_order'),
+    supabase.from('boards').select('id, name, slug').eq('site_id', currentSiteId).order('sort_order'),
+  ])
 
   return (
     <div>
@@ -43,6 +42,7 @@ export default async function DesignPage() {
         banners={banners}
         layout={resolveLayout(design, banners)}
         categories={allCategories ?? []}
+        boards={allBoards ?? []}
       />
     </div>
   )

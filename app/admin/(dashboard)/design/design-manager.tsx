@@ -12,14 +12,22 @@ type CategoryOption = {
   parent_id: string | null
 }
 
+type BoardOption = {
+  id: string
+  name: string
+  slug: string
+}
+
 export function DesignManager({
   siteId,
   design,
   categories,
+  boards,
 }: {
   siteId: string
   design: SiteDesign | null
   categories: CategoryOption[]
+  boards: BoardOption[]
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -294,14 +302,43 @@ export function DesignManager({
       {/* 네비게이션 */}
       <div className="rounded-xl bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-zinc-900">네비게이션</h3>
-          <button
-            type="button"
-            onClick={addNavItem}
-            className="rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200"
-          >
-            메뉴 추가
-          </button>
+          <h3 className="text-lg font-semibold text-zinc-900">네비게이션 메뉴</h3>
+          <div className="flex gap-2">
+            <select
+              onChange={(e) => {
+                const val = e.target.value
+                if (!val) return
+                if (val.startsWith('cat:')) {
+                  const cat = categories.find((c) => c.id === val.slice(4))
+                  if (cat) setNavItems([...navItems, { label: cat.name, href: `/category/${cat.id}` }])
+                } else if (val.startsWith('board:')) {
+                  const board = boards.find((b) => b.id === val.slice(6))
+                  if (board) setNavItems([...navItems, { label: board.name, href: `/board/${board.slug}` }])
+                }
+                e.target.value = ''
+              }}
+              className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs text-zinc-700"
+            >
+              <option value="">카테고리/게시판 추가</option>
+              <optgroup label="카테고리">
+                {categories.filter((c) => c.level === 1).map((cat) => (
+                  <option key={cat.id} value={`cat:${cat.id}`}>{cat.name}</option>
+                ))}
+              </optgroup>
+              <optgroup label="게시판">
+                {boards.map((board) => (
+                  <option key={board.id} value={`board:${board.id}`}>{board.name}</option>
+                ))}
+              </optgroup>
+            </select>
+            <button
+              type="button"
+              onClick={addNavItem}
+              className="rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200"
+            >
+              직접 추가
+            </button>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -319,7 +356,7 @@ export function DesignManager({
                 value={item.href}
                 onChange={(e) => updateNavItem(index, 'href', e.target.value)}
                 className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                placeholder="/products"
+                placeholder="/category/신발 또는 /board/notice"
               />
               <button
                 type="button"

@@ -1,0 +1,195 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createBoard, updateBoard, deleteBoard } from './actions'
+import type { Board } from './actions'
+
+export function BoardManager({
+  siteId,
+  boards,
+}: {
+  siteId: string
+  boards: Board[]
+}) {
+  const router = useRouter()
+  const [showForm, setShowForm] = useState(false)
+  const [editingBoard, setEditingBoard] = useState<Board | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    const formData = new FormData(e.currentTarget)
+
+    const result = editingBoard
+      ? await updateBoard(editingBoard.id, formData)
+      : await createBoard(siteId, formData)
+
+    if (result.error) {
+      setError(result.error)
+    } else {
+      setShowForm(false)
+      setEditingBoard(null)
+      router.refresh()
+    }
+    setLoading(false)
+  }
+
+  function handleEdit(board: Board) {
+    setEditingBoard(board)
+    setShowForm(true)
+    setError(null)
+  }
+
+  function handleCancel() {
+    setShowForm(false)
+    setEditingBoard(null)
+    setError(null)
+  }
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
+      )}
+
+      {/* 게시판 목록 */}
+      <div className="rounded-xl bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4">
+          <h3 className="font-semibold text-zinc-900">게시판 목록</h3>
+          <button
+            onClick={() => { setShowForm(true); setEditingBoard(null); setError(null) }}
+            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+          >
+            게시판 추가
+          </button>
+        </div>
+
+        {boards.length === 0 ? (
+          <div className="py-12 text-center text-sm text-zinc-400">등록된 게시판이 없습니다.</div>
+        ) : (
+          <div className="divide-y divide-zinc-100">
+            {boards.map((board) => (
+              <div key={board.id} className="flex items-center justify-between px-6 py-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-zinc-900">{board.name}</p>
+                    <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-500">/board/{board.slug}</span>
+                    {!board.is_active && (
+                      <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-400">비활성</span>
+                    )}
+                  </div>
+                  {board.description && (
+                    <p className="mt-0.5 text-xs text-zinc-500">{board.description}</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(board)}
+                    className="rounded-md bg-blue-50 px-3 py-1.5 text-[11px] font-medium text-blue-600 hover:bg-blue-100"
+                  >
+                    수정
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (confirm(`"${board.name}" 게시판을 삭제하시겠습니까? 게시글도 모두 삭제됩니다.`)) {
+                        await deleteBoard(board.id)
+                        router.refresh()
+                      }
+                    }}
+                    className="rounded-md bg-red-50 px-3 py-1.5 text-[11px] font-medium text-red-500 hover:bg-red-100"
+                  >
+                    삭제
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 게시판 추가/수정 폼 */}
+      {showForm && (
+        <div className="rounded-xl bg-white p-6 shadow-sm">
+          <h3 className="mb-4 text-lg font-semibold text-zinc-900">
+            {editingBoard ? '게시판 수정' : '게시판 추가'}
+          </h3>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-zinc-700">게시판명</label>
+                <input
+                  name="name"
+                  type="text"
+                  required
+                  defaultValue={editingBoard?.name ?? ''}
+                  placeholder="공지사항"
+                  className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-zinc-700">슬러그 (URL)</label>
+                <input
+                  name="slug"
+                  type="text"
+                  required
+                  defaultValue={editingBoard?.slug ?? ''}
+                  placeholder="notice"
+                  className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                />
+                <p className="mt-1 text-xs text-zinc-400">영문, 숫자, 하이픈만 사용. 예: notice, faq, qna</p>
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">설명 (선택)</label>
+              <input
+                name="description"
+                type="text"
+                defaultValue={editingBoard?.description ?? ''}
+                placeholder="게시판 설명"
+                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              />
+            </div>
+            {editingBoard && (
+              <div className="flex items-center gap-2">
+                <input name="is_active" type="hidden" value={editingBoard.is_active ? 'true' : 'false'} />
+                <label className="flex items-center gap-2 text-sm text-zinc-700">
+                  <input
+                    type="checkbox"
+                    defaultChecked={editingBoard.is_active}
+                    onChange={(e) => {
+                      const hidden = e.target.parentElement?.parentElement?.querySelector('input[name=is_active]') as HTMLInputElement
+                      if (hidden) hidden.value = e.target.checked ? 'true' : 'false'
+                    }}
+                    className="h-4 w-4 rounded border-zinc-300"
+                  />
+                  활성화
+                </label>
+              </div>
+            )}
+            <div className="flex gap-2 pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="rounded-lg bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+              >
+                {loading ? '저장 중...' : editingBoard ? '수정 완료' : '게시판 추가'}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="rounded-lg border border-zinc-300 px-6 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+              >
+                취소
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -21,18 +21,26 @@ type CategoryOption = {
   parent_id: string | null
 }
 
+type BoardOption = {
+  id: string
+  name: string
+  slug: string
+}
+
 export function DesignTabs({
   siteId,
   design,
   banners,
   layout,
   categories,
+  boards,
 }: {
   siteId: string
   design: SiteDesign | null
   banners: Banner[]
   layout: LayoutSection[]
   categories: CategoryOption[]
+  boards: BoardOption[]
 }) {
   const [activeTab, setActiveTab] = useState<Tab>('layout')
 
@@ -63,7 +71,7 @@ export function DesignTabs({
         <BannerManager banners={banners} siteId={siteId} />
       )}
       {activeTab === 'design' && (
-        <DesignManager siteId={siteId} design={design} categories={categories} />
+        <DesignManager siteId={siteId} design={design} categories={categories} boards={boards} />
       )}
     </div>
   )
