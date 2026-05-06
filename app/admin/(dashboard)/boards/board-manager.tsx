@@ -79,6 +79,9 @@ export function BoardManager({
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-zinc-900">{board.name}</p>
                     <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-500">/board/{board.slug}</span>
+                    <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] text-blue-600">
+                      {board.board_type === 'gallery' ? '갤러리형' : board.board_type === 'webzine' ? '웹진형' : '리스트형'}
+                    </span>
                     {!board.is_active && (
                       <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-400">비활성</span>
                     )}
@@ -142,6 +145,33 @@ export function BoardManager({
                   className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
                 />
                 <p className="mt-1 text-xs text-zinc-400">영문, 숫자, 하이픈만 사용. 예: notice, faq, qna</p>
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">게시판 유형</label>
+              <div className="flex gap-3">
+                {[
+                  { value: 'list', label: '리스트형', desc: '제목 목록' },
+                  { value: 'gallery', label: '갤러리형', desc: '이미지 카드' },
+                  { value: 'webzine', label: '웹진형', desc: '이미지+본문' },
+                ].map((type) => (
+                  <label
+                    key={type.value}
+                    className="flex flex-1 cursor-pointer items-center gap-2 rounded-lg border border-zinc-200 px-4 py-3 text-sm has-[:checked]:border-zinc-900 has-[:checked]:bg-zinc-50"
+                  >
+                    <input
+                      type="radio"
+                      name="board_type"
+                      value={type.value}
+                      defaultChecked={(editingBoard?.board_type ?? 'list') === type.value}
+                      className="h-4 w-4 border-zinc-300 text-zinc-900"
+                    />
+                    <div>
+                      <p className="font-medium text-zinc-900">{type.label}</p>
+                      <p className="text-[11px] text-zinc-400">{type.desc}</p>
+                    </div>
+                  </label>
+                ))}
               </div>
             </div>
             <div>
