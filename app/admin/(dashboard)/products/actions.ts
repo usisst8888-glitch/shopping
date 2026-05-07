@@ -44,15 +44,37 @@ export async function getProducts(filter?: ProductsFilter): Promise<ProductsResu
   const status = filter?.status ?? 'all'
   const categoryId = filter?.categoryId ?? ''
 
-  // 카테고리 필터가 있으면 해당 카테고리의 상품 ID 먼저 조회
-  let filteredProductIds: string[] | null = null
+  // 카테고리 필터: category_nos 기반
+  let categoryNos: string[] | null = null
   if (categoryId) {
-    const { data: relations } = await supabase
-      .from('product_categories')
-      .select('product_id')
-      .eq('category_id', categoryId)
-    filteredProductIds = (relations ?? []).map((r) => r.product_id)
-    if (filteredProductIds.length === 0) {
+    const { data: cat } = await supabase
+      .from('categories')
+      .select('category_no')
+      .eq('id', categoryId)
+      .single()
+
+    const { data: children } = await supabase
+      .from('categories')
+      .select('id, category_no')
+      .eq('parent_id', categoryId)
+
+    const childIds = (children ?? []).map((c) => c.id)
+    let grandChildNos: string[] = []
+    if (childIds.length > 0) {
+      const { data: gc } = await supabase
+        .from('categories')
+        .select('category_no')
+        .in('parent_id', childIds)
+      grandChildNos = (gc ?? []).map((c) => c.category_no).filter(Boolean) as string[]
+    }
+
+    categoryNos = [
+      cat?.category_no,
+      ...(children ?? []).map((c) => c.category_no),
+      ...grandChildNos,
+    ].filter(Boolean) as string[]
+
+    if (categoryNos.length === 0) {
       return { products: [], total: 0, page, size }
     }
   }
@@ -66,9 +88,11 @@ export async function getProducts(filter?: ProductsFilter): Promise<ProductsResu
     query = query.eq('is_active', true)
   } else if (status === 'hidden') {
     query = query.eq('is_active', false)
+  } else if (status === 'soldout') {
+    query = query.eq('status', 'soldout')
   }
-  if (filteredProductIds) {
-    query = query.in('id', filteredProductIds)
+  if (categoryNos) {
+    query = query.overlaps('category_nos', categoryNos)
   }
 
   const from = (page - 1) * size
