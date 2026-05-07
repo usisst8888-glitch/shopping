@@ -77,7 +77,9 @@ export function ProductForm({
   const [description, setDescription] = useState(stored?.description ?? product?.description ?? '')
   const [formName, setFormName] = useState(stored?.name ?? product?.name ?? '')
   const [formPrice, setFormPrice] = useState(stored?.price ?? product?.price ?? '')
-  const [isActive, setIsActive] = useState<boolean>(stored?.isActive ?? product?.is_active ?? true)
+  const [productStatus, setProductStatus] = useState<'active' | 'soldout' | 'hidden'>(
+    stored?.productStatus ?? (product as any)?.status ?? (product?.is_active === false ? 'hidden' : 'active')
+  )
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
     new Set(stored?.categoryIds ?? product?.category_ids ?? [])
   )
@@ -103,7 +105,7 @@ export function ProductForm({
     const data = {
       name: formName,
       price: formPrice,
-      isActive,
+      productStatus,
       thumbnailUrl,
       subImages,
       summary,
@@ -113,7 +115,7 @@ export function ProductForm({
     try {
       sessionStorage.setItem(storageKey, JSON.stringify(data))
     } catch {}
-  }, [formName, formPrice, isActive, thumbnailUrl, subImages, summary, description, selectedCategories, storageKey])
+  }, [formName, formPrice, productStatus, thumbnailUrl, subImages, summary, description, selectedCategories, storageKey])
 
   // 하위 카테고리가 있는 카테고리 ID 집합
   const hasChildren = new Set(
@@ -252,7 +254,8 @@ export function ProductForm({
     formData.set('summary', summary)
     formData.set('description', description)
     formData.set('category_ids', JSON.stringify([...selectedCategories]))
-    formData.set('is_active', isActive ? 'true' : 'false')
+    formData.set('status', productStatus)
+    formData.set('is_active', productStatus === 'active' ? 'true' : 'false')
 
     const result = isEdit
       ? await updateProduct(product!.id, formData)
@@ -365,21 +368,19 @@ export function ProductForm({
                 <div className="flex items-center justify-between rounded-lg border border-zinc-200 px-4 py-3">
                   <div>
                     <p className="text-sm font-medium text-zinc-700">판매 상태</p>
-                    <p className="text-xs text-zinc-400">{isActive ? '고객에게 노출됩니다' : '고객에게 숨겨집니다'}</p>
+                    <p className="text-xs text-zinc-400">
+                      {productStatus === 'active' ? '고객에게 노출됩니다' : productStatus === 'soldout' ? '품절 표시됩니다' : '고객에게 숨겨집니다'}
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsActive(!isActive)}
-                    className={`relative h-6 w-11 rounded-full transition-colors ${
-                      isActive ? 'bg-emerald-500' : 'bg-zinc-300'
-                    }`}
+                  <select
+                    value={productStatus}
+                    onChange={(e) => setProductStatus(e.target.value as 'active' | 'soldout' | 'hidden')}
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
                   >
-                    <span
-                      className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                        isActive ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
+                    <option value="active">판매중</option>
+                    <option value="soldout">품절</option>
+                    <option value="hidden">숨김</option>
+                  </select>
                 </div>
                 <div>
                   <label htmlFor="name" className="mb-1 block text-sm font-medium text-zinc-700">

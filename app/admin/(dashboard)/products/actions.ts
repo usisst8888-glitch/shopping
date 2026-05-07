@@ -145,7 +145,8 @@ export async function createProduct(formData: FormData) {
   const thumbnailUrl = formData.get('thumbnail_url') as string
   const subImages = JSON.parse(formData.get('sub_images') as string || '[]') as string[]
   const categoryIds = JSON.parse(formData.get('category_ids') as string || '[]') as string[]
-  const isActive = formData.get('is_active') !== 'false'
+  const status = (formData.get('status') as string) || 'active'
+  const isActive = status === 'active'
 
   // 선택된 카테고리들의 category_no를 모두 수집해서 저장
   let categoryNos: string[] = []
@@ -181,6 +182,7 @@ export async function createProduct(formData: FormData) {
       thumbnail_url: thumbnailUrl || null,
       sub_images: subImages,
       category_nos: categoryNos,
+      status,
       is_active: isActive,
     })
     .select('id')
@@ -236,7 +238,8 @@ export async function updateProduct(id: string, formData: FormData) {
   const thumbnailUrl = formData.get('thumbnail_url') as string
   const subImages = JSON.parse(formData.get('sub_images') as string || '[]') as string[]
   const categoryIds = JSON.parse(formData.get('category_ids') as string || '[]') as string[]
-  const isActive = formData.get('is_active') !== 'false'
+  const status = (formData.get('status') as string) || 'active'
+  const isActive = status === 'active'
 
   let categoryNos: string[] = []
   if (categoryIds.length > 0) {
@@ -281,6 +284,7 @@ export async function updateProduct(id: string, formData: FormData) {
       thumbnail_url: thumbnailUrl || null,
       sub_images: subImages,
       category_nos: categoryNos,
+      status,
       is_active: isActive,
     })
     .eq('id', id)
@@ -348,6 +352,23 @@ export async function toggleProductActive(id: string, isActive: boolean) {
   const { error } = await supabase
     .from('products')
     .update({ is_active: isActive })
+    .eq('id', id)
+
+  if (error) {
+    return { error: '상태 변경 중 오류가 발생했습니다.' }
+  }
+
+  revalidatePath('/admin/products')
+  return { success: true }
+}
+
+export async function updateProductStatus(id: string, status: string) {
+  const supabase = await createClient()
+
+  const isActive = status === 'active'
+  const { error } = await supabase
+    .from('products')
+    .update({ status, is_active: isActive })
     .eq('id', id)
 
   if (error) {
