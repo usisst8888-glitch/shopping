@@ -15,7 +15,7 @@ export default async function WritePage({
 
   const { data: board } = await supabase
     .from('boards')
-    .select('id, name, slug')
+    .select('id, name, slug, board_categories')
     .eq('slug', decodeURIComponent(slug))
     .eq('is_active', true)
     .single()
@@ -37,6 +37,7 @@ export default async function WritePage({
         userId={user.id}
         userName={profile?.name || user.email?.split('@')[0] || '익명'}
         isAdmin={profile?.role === 'admin'}
+        boardCategories={(board as any).board_categories ?? []}
       />
     </div>
   )

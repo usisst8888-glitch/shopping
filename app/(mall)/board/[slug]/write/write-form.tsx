@@ -10,12 +10,14 @@ export function WriteForm({
   userId,
   userName,
   isAdmin,
+  boardCategories,
 }: {
   boardId: string
   boardSlug: string
   userId: string
   userName: string
   isAdmin: boolean
+  boardCategories: string[]
 }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -29,6 +31,7 @@ export function WriteForm({
     const formData = new FormData(e.currentTarget)
     const title = (formData.get('title') as string)?.trim()
     const content = (formData.get('content') as string)?.trim()
+    const category = (formData.get('category') as string)?.trim() || null
     const isNotice = formData.get('is_notice') === 'on'
 
     if (!title) { setError('제목을 입력하세요.'); setLoading(false); return }
@@ -41,6 +44,7 @@ export function WriteForm({
       content: content || null,
       author_name: userName,
       is_notice: isAdmin ? isNotice : false,
+      category,
     })
 
     if (err) {
@@ -60,6 +64,20 @@ export function WriteForm({
           <input name="is_notice" type="checkbox" className="h-4 w-4 rounded border-zinc-300" />
           공지사항으로 등록
         </label>
+      )}
+
+      {boardCategories.length > 0 && (
+        <div>
+          <select
+            name="category"
+            className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+          >
+            <option value="">카테고리 선택</option>
+            {boardCategories.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
       )}
 
       <div>

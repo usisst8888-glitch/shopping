@@ -41,11 +41,12 @@ export default async function BoardPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ page?: string }>
+  searchParams: Promise<{ page?: string; cat?: string }>
 }) {
   const { slug } = await params
   const sp = await searchParams
   const page = parseInt(sp.page ?? '1') || 1
+  const filterCat = sp.cat ?? ''
   const size = 20
 
   const supabase = await createClient()
@@ -67,11 +68,15 @@ export default async function BoardPage({
     .order('created_at', { ascending: false })
 
   const from = (page - 1) * size
-  const { data: posts, count } = await supabase
+  let postsQuery = supabase
     .from('board_posts')
-    .select('id, title, content, author_name, thumbnail_url, view_count, is_notice, created_at', { count: 'exact' })
+    .select('id, title, content, author_name, thumbnail_url, view_count, is_notice, category, created_at', { count: 'exact' })
     .eq('board_id', board.id)
     .eq('is_notice', false)
+  if (filterCat) {
+    postsQuery = postsQuery.eq('category', filterCat)
+  }
+  const { data: posts, count } = await postsQuery
     .order('created_at', { ascending: false })
     .range(from, from + size - 1)
 
@@ -85,7 +90,31 @@ export default async function BoardPage({
         <p className="mb-6 text-sm text-zinc-500">{board.description}</p>
       )}
 
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex items-center justify-between">
+        {/* 카테고리 탭 */}
+        {board.board_categories && board.board_categories.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            <Link
+              href={`/board/${slug}`}
+              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                !filterCat ? 'bg-zinc-900 text-white' : 'border border-zinc-200 text-zinc-600 hover:border-zinc-400'
+              }`}
+            >
+              전체
+            </Link>
+            {board.board_categories.map((cat: string) => (
+              <Link
+                key={cat}
+                href={`/board/${slug}?cat=${encodeURIComponent(cat)}`}
+                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                  filterCat === cat ? 'bg-zinc-900 text-white' : 'border border-zinc-200 text-zinc-600 hover:border-zinc-400'
+                }`}
+              >
+                {cat}
+              </Link>
+            ))}
+          </div>
+        ) : <div />}
         <Link
           href={`/board/${slug}/write`}
           className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"

@@ -12,6 +12,7 @@ export type Board = {
   slug: string
   description: string | null
   board_type: BoardType
+  board_categories: string[]
   sort_order: number
   is_active: boolean
   created_at: string
@@ -36,6 +37,10 @@ export async function createBoard(siteId: string, formData: FormData) {
   const slug = (formData.get('slug') as string)?.trim()
   const description = (formData.get('description') as string)?.trim() || null
   const boardType = (formData.get('board_type') as string) || 'list'
+  let boardCategories: string[] = []
+  try {
+    boardCategories = JSON.parse(formData.get('board_categories') as string || '[]')
+  } catch {}
 
   if (!name || !slug) return { error: '게시판명과 슬러그는 필수입니다.' }
 
@@ -45,6 +50,7 @@ export async function createBoard(siteId: string, formData: FormData) {
     slug,
     description,
     board_type: boardType,
+    board_categories: boardCategories,
   })
 
   if (error) {
@@ -64,10 +70,14 @@ export async function updateBoard(id: string, formData: FormData) {
   const description = (formData.get('description') as string)?.trim() || null
   const boardType = (formData.get('board_type') as string) || 'list'
   const isActive = formData.get('is_active') === 'true'
+  let boardCategories: string[] = []
+  try {
+    boardCategories = JSON.parse(formData.get('board_categories') as string || '[]')
+  } catch {}
 
   const { error } = await supabase
     .from('boards')
-    .update({ name, slug, description, board_type: boardType, is_active: isActive })
+    .update({ name, slug, description, board_type: boardType, is_active: isActive, board_categories: boardCategories })
     .eq('id', id)
 
   if (error) return { error: '게시판 수정 중 오류가 발생했습니다.' }

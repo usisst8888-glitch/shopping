@@ -17,6 +17,8 @@ export function BoardManager({
   const [editingBoard, setEditingBoard] = useState<Board | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [catList, setCatList] = useState<string[]>([])
+  const [newCat, setNewCat] = useState('')
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -24,6 +26,7 @@ export function BoardManager({
     setError(null)
 
     const formData = new FormData(e.currentTarget)
+    formData.set('board_categories', JSON.stringify(catList))
 
     const result = editingBoard
       ? await updateBoard(editingBoard.id, formData)
@@ -41,6 +44,7 @@ export function BoardManager({
 
   function handleEdit(board: Board) {
     setEditingBoard(board)
+    setCatList(board.board_categories ?? [])
     setShowForm(true)
     setError(null)
   }
@@ -48,6 +52,8 @@ export function BoardManager({
   function handleCancel() {
     setShowForm(false)
     setEditingBoard(null)
+    setCatList([])
+    setNewCat('')
     setError(null)
   }
 
@@ -183,6 +189,45 @@ export function BoardManager({
                 placeholder="게시판 설명"
                 className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
               />
+            </div>
+            {/* 게시판 카테고리 */}
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">게시판 카테고리 (선택)</label>
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {catList.map((cat, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-3 py-1 text-sm text-zinc-700">
+                    {cat}
+                    <button type="button" onClick={() => setCatList(prev => prev.filter((_, idx) => idx !== i))} className="text-zinc-400 hover:text-red-500">&times;</button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newCat}
+                  onChange={(e) => setNewCat(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      const v = newCat.trim()
+                      if (v && !catList.includes(v)) { setCatList(prev => [...prev, v]); setNewCat('') }
+                    }
+                  }}
+                  placeholder="카테고리명 입력 후 Enter"
+                  className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const v = newCat.trim()
+                    if (v && !catList.includes(v)) { setCatList(prev => [...prev, v]); setNewCat('') }
+                  }}
+                  className="rounded-lg bg-zinc-100 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-200"
+                >
+                  추가
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-zinc-400">글 작성 시 카테고리를 선택할 수 있습니다.</p>
             </div>
             {editingBoard && (
               <div className="flex items-center gap-2">
