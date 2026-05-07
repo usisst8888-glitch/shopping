@@ -211,7 +211,7 @@ export function ProductTable({
                           await updateProductStatus(product.id, e.target.value as ProductStatus)
                           router.refresh()
                         }}
-                        className={`cursor-pointer rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${
+                        className={`cursor-pointer rounded-lg px-3 py-2 text-xs font-semibold ring-1 ${
                           (product.status || (product.is_active ? 'active' : 'hidden')) === 'active'
                             ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
                             : (product.status === 'soldout')
