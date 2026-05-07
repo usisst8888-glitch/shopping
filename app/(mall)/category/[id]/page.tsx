@@ -186,10 +186,10 @@ export default async function CategoryPage({
       {thirdCategories.length > 0 && (
         <div className="bg-white">
           <div className="mx-auto max-w-5xl px-4 pb-4">
-            <div className="grid grid-cols-4">
+            <div className="grid grid-cols-4 border border-zinc-200">
               <Link
                 href={`/category/${(category.level === 3 && category.parent_id) ? category.parent_id : (category.slug || category.id)}`}
-                className="px-4 py-3 text-center text-[13px] text-zinc-700 hover:bg-zinc-50"
+                className="border-b border-r border-zinc-200 px-4 py-3 text-center text-[13px] text-zinc-700 hover:bg-zinc-50"
               >
                 Show All
               </Link>
@@ -197,7 +197,7 @@ export default async function CategoryPage({
                 <Link
                   key={tc.id}
                   href={`/category/${tc.slug || tc.id}`}
-                  className={`px-4 py-3 text-center text-[13px] hover:bg-zinc-50 ${
+                  className={`border-b border-r border-zinc-200 px-4 py-3 text-center text-[13px] hover:bg-zinc-50 ${
                     tc.id === category.id ? 'font-bold text-zinc-900' : 'text-zinc-700'
                   }`}
                 >
