@@ -50,15 +50,30 @@ export default async function CategoryPage({
 
   if (!category) notFound()
 
-  // 1차 카테고리인 경우 그 자체를, 2차/3차인 경우 부모 1차를 찾기
+  // 1차 카테고리를 찾기 (2차→부모, 3차→부모의 부모)
   let rootCategory = category
-  if (category.level > 1 && category.parent_id) {
+  if (category.level === 2 && category.parent_id) {
     const { data: parent } = await supabase
       .from('categories')
       .select('id, name, slug, category_no, banner_url, banner_title')
       .eq('id', category.parent_id)
       .single()
     if (parent) rootCategory = { ...parent, level: 1, parent_id: null }
+  } else if (category.level === 3 && category.parent_id) {
+    // 3차 → 2차 부모 찾기 → 1차 부모 찾기
+    const { data: parent2 } = await supabase
+      .from('categories')
+      .select('id, parent_id')
+      .eq('id', category.parent_id)
+      .single()
+    if (parent2?.parent_id) {
+      const { data: parent1 } = await supabase
+        .from('categories')
+        .select('id, name, slug, category_no, banner_url, banner_title')
+        .eq('id', parent2.parent_id)
+        .single()
+      if (parent1) rootCategory = { ...parent1, level: 1, parent_id: null }
+    }
   }
 
   // 2차 카테고리 (1차의 하위)
@@ -68,14 +83,14 @@ export default async function CategoryPage({
     .eq('parent_id', rootCategory.id)
     .order('sort_order')
 
-  // 3차 카테고리 (현재 선택이 2차이면 그 하위)
-  const selectedSubId = category.level === 2 ? category.id : null
+  // 3차 카테고리 (2차 선택 시 → 그 하위, 3차 선택 시 → 부모 2차의 하위)
+  const thirdParentId = category.level === 2 ? category.id : (category.level === 3 ? category.parent_id : null)
   let thirdCategories: { id: string; name: string; slug: string | null; category_no: string | null }[] = []
-  if (selectedSubId) {
+  if (thirdParentId) {
     const { data: tc } = await supabase
       .from('categories')
       .select('id, name, slug, category_no')
-      .eq('parent_id', selectedSubId)
+      .eq('parent_id', thirdParentId)
       .order('sort_order')
     thirdCategories = tc ?? []
   }
@@ -138,11 +153,11 @@ export default async function CategoryPage({
 
       {/* 2차 카테고리 이미지 썸네일 */}
       {subCategories && subCategories.length > 0 && (
-        <div className="border-b border-zinc-200 bg-white py-6">
+        <div className="bg-white py-6">
           <div className="mx-auto max-w-5xl px-4">
             <div className="grid grid-cols-3 gap-4 md:grid-cols-6">
               {subCategories.map((sub) => {
-                const isActive = sub.id === category.id
+                const isActive = sub.id === category.id || (category.level === 3 && category.parent_id === sub.id)
                 return (
                   <Link
                     key={sub.id}
@@ -169,12 +184,12 @@ export default async function CategoryPage({
 
       {/* 3차 카테고리 그리드 */}
       {thirdCategories.length > 0 && (
-        <div className="border-b border-zinc-200 bg-white">
-          <div className="mx-auto max-w-5xl px-4 py-4">
-            <div className="grid grid-cols-4 gap-px border border-zinc-200">
+        <div className="bg-white">
+          <div className="mx-auto max-w-5xl px-4 pb-4">
+            <div className="grid grid-cols-4">
               <Link
-                href={`/category/${category.slug || category.id}`}
-                className="bg-white px-4 py-3 text-center text-[13px] text-zinc-700 hover:bg-zinc-50"
+                href={`/category/${(category.level === 3 && category.parent_id) ? category.parent_id : (category.slug || category.id)}`}
+                className="px-4 py-3 text-center text-[13px] text-zinc-700 hover:bg-zinc-50"
               >
                 Show All
               </Link>
@@ -182,7 +197,9 @@ export default async function CategoryPage({
                 <Link
                   key={tc.id}
                   href={`/category/${tc.slug || tc.id}`}
-                  className="bg-white px-4 py-3 text-center text-[13px] text-zinc-700 hover:bg-zinc-50"
+                  className={`px-4 py-3 text-center text-[13px] hover:bg-zinc-50 ${
+                    tc.id === category.id ? 'font-bold text-zinc-900' : 'text-zinc-700'
+                  }`}
                 >
                   {tc.name}
                 </Link>
