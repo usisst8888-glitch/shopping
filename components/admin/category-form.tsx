@@ -20,9 +20,12 @@ export function CategoryForm({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [imageUrl, setImageUrl] = useState(category?.image_url ?? '')
+  const [bannerUrl, setBannerUrl] = useState((category as any)?.banner_url ?? '')
+  const [bannerTitle, setBannerTitle] = useState((category as any)?.banner_title ?? '')
   const [uploading, setUploading] = useState(false)
   const [isMain, setIsMain] = useState(category?.is_main ?? false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const bannerInputRef = useRef<HTMLInputElement>(null)
 
   const isEdit = mode === 'edit' && category
   const newLevel = parentLevel ? parentLevel + 1 : 1
@@ -49,6 +52,8 @@ export function CategoryForm({
     setError(null)
 
     formData.set('image_url', imageUrl)
+    formData.set('banner_url', bannerUrl)
+    formData.set('banner_title', bannerTitle)
     formData.set('is_main', String(isMain))
 
     let result
@@ -146,6 +151,53 @@ export function CategoryForm({
           />
           <p className="mt-1 text-xs text-zinc-400">메인 페이지 카테고리 섹션에 표시됩니다.</p>
         </div>
+
+        {/* 배너 이미지 (1차 카테고리만) */}
+        {(!parentId || (isEdit && category && category.level === 1)) && (
+          <div>
+            <label className="mb-1 block text-sm font-medium text-zinc-700">카테고리 페이지 배너</label>
+            <div className="flex items-start gap-3">
+              <div
+                onClick={() => bannerInputRef.current?.click()}
+                className="flex h-24 w-60 cursor-pointer items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 hover:border-zinc-400"
+              >
+                {bannerUrl ? (
+                  <img src={bannerUrl} alt="배너" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-center text-[10px] text-zinc-400">배너 이미지 업로드</span>
+                )}
+              </div>
+              {bannerUrl && (
+                <button type="button" onClick={() => setBannerUrl('')} className="text-xs text-red-500 hover:underline">삭제</button>
+              )}
+            </div>
+            <input
+              ref={bannerInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                setUploading(true)
+                const fd = new FormData()
+                fd.set('file', file)
+                const res = await fetch('/api/upload', { method: 'POST', body: fd })
+                const result = await res.json()
+                if (result.url) setBannerUrl(result.url)
+                setUploading(false)
+              }}
+            />
+            <input
+              type="text"
+              value={bannerTitle}
+              onChange={(e) => setBannerTitle(e.target.value)}
+              placeholder="배너 타이틀 (예: HIGH-END)"
+              className="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm"
+            />
+            <p className="mt-1 text-xs text-zinc-400">카테고리 페이지 상단에 표시되는 배너입니다. 권장: 1920x400px</p>
+          </div>
+        )}
 
         <div>
           <label htmlFor="sort_order" className="mb-1 block text-sm font-medium text-zinc-700">

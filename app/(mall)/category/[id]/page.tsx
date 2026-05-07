@@ -44,26 +44,41 @@ export default async function CategoryPage({
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
   const { data: category } = await supabase
     .from('categories')
-    .select('id, name, slug, category_no, level, parent_id')
+    .select('id, name, slug, category_no, level, parent_id, banner_url, banner_title')
     .eq(isUuid ? 'id' : 'slug', id)
     .single()
 
   if (!category) notFound()
 
+  // 1차 카테고리인 경우 그 자체를, 2차/3차인 경우 부모 1차를 찾기
+  let rootCategory = category
+  if (category.level > 1 && category.parent_id) {
+    const { data: parent } = await supabase
+      .from('categories')
+      .select('id, name, slug, category_no, banner_url, banner_title')
+      .eq('id', category.parent_id)
+      .single()
+    if (parent) rootCategory = { ...parent, level: 1, parent_id: null }
+  }
+
+  // 2차 카테고리 (1차의 하위)
+  const { data: subCategories } = await supabase
+    .from('categories')
+    .select('id, name, slug, category_no, image_url')
+    .eq('parent_id', rootCategory.id)
+    .order('sort_order')
+
+  // 현재 선택된 카테고리의 하위 + 자기 자신의 category_no 수집
   const { data: children } = await supabase
     .from('categories')
-    .select('id, name, slug, category_no')
+    .select('id, category_no')
     .eq('parent_id', category.id)
-    .order('sort_order')
 
   const childIds = (children ?? []).map((c) => c.id)
   let grandChildNos: string[] = []
   if (childIds.length > 0) {
-    const { data: grandChildren } = await supabase
-      .from('categories')
-      .select('category_no')
-      .in('parent_id', childIds)
-    grandChildNos = (grandChildren ?? []).map((c) => c.category_no).filter(Boolean) as string[]
+    const { data: gc } = await supabase.from('categories').select('category_no').in('parent_id', childIds)
+    grandChildNos = (gc ?? []).map((c) => c.category_no).filter(Boolean) as string[]
   }
 
   const allNos = [
@@ -88,35 +103,68 @@ export default async function CategoryPage({
     total = count ?? 0
   }
 
-  return (
-    <div className="mx-auto max-w-7xl px-4 py-12">
-      <h1 className="mb-2 text-2xl font-bold text-zinc-900">{category.name}</h1>
+  const bannerUrl = rootCategory.banner_url || category.banner_url
+  const bannerTitle = rootCategory.banner_title || category.banner_title || rootCategory.name
 
-      {children && children.length > 0 && (
-        <div className="mb-8 flex flex-wrap gap-2">
-          <Link
-            href={`/category/${category.slug || category.id}`}
-            className="rounded-full bg-zinc-900 px-4 py-1.5 text-xs font-medium text-white"
-          >
-            전체
-          </Link>
-          {children.map((child) => (
-            <Link
-              key={child.id}
-              href={`/category/${child.slug || child.id}`}
-              className="rounded-full border border-zinc-200 px-4 py-1.5 text-xs font-medium text-zinc-600 hover:border-zinc-400"
-            >
-              {child.name}
-            </Link>
-          ))}
+  return (
+    <div>
+      {/* 배너 */}
+      {bannerUrl ? (
+        <div className="relative mx-auto max-w-[1920px]">
+          <div className="relative h-[200px] md:h-[300px] overflow-hidden">
+            <img src={bannerUrl} alt={bannerTitle} className="h-full w-full object-cover" />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+              <h1 className="text-3xl font-bold tracking-wider text-white md:text-5xl">{bannerTitle}</h1>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-zinc-900 py-12 text-center">
+          <h1 className="text-3xl font-bold tracking-wider text-white md:text-4xl">{bannerTitle}</h1>
         </div>
       )}
 
-      <CategoryProductList
-        initialProducts={initialProducts}
-        categoryNos={allNos}
-        total={total}
-      />
+      {/* 2차 카테고리 이미지 썸네일 */}
+      {subCategories && subCategories.length > 0 && (
+        <div className="border-b border-zinc-200 bg-white py-6">
+          <div className="mx-auto flex max-w-5xl items-center justify-center gap-6 overflow-x-auto px-4">
+            {subCategories.map((sub) => {
+              const isActive = sub.id === category.id
+              return (
+                <Link
+                  key={sub.id}
+                  href={`/category/${sub.slug || sub.id}`}
+                  className={`flex flex-col items-center gap-2 ${isActive ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
+                >
+                  <div className={`h-16 w-16 overflow-hidden rounded-full border-2 ${isActive ? 'border-zinc-900' : 'border-zinc-200'} bg-zinc-100`}>
+                    {sub.image_url ? (
+                      <img src={sub.image_url} alt={sub.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-[10px] text-zinc-400">{sub.name.slice(0, 2)}</div>
+                    )}
+                  </div>
+                  <span className={`text-[11px] whitespace-nowrap ${isActive ? 'font-bold text-zinc-900' : 'text-zinc-500'}`}>
+                    {sub.name}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 상품 그리드 */}
+      <div className="mx-auto max-w-7xl px-4 py-8">
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-sm text-zinc-500">총 {total.toLocaleString()}개</p>
+        </div>
+
+        <CategoryProductList
+          initialProducts={initialProducts}
+          categoryNos={allNos}
+          total={total}
+        />
+      </div>
     </div>
   )
 }
