@@ -24,7 +24,7 @@ export type ProductsFilter = {
   page?: number
   size?: number
   search?: string
-  status?: 'all' | 'active' | 'hidden'
+  status?: 'all' | 'active' | 'soldout' | 'hidden'
   categoryId?: string
 }
 
