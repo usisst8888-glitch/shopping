@@ -403,6 +403,53 @@ export async function updateProductStatus(id: string, status: string) {
   return { success: true }
 }
 
+export async function duplicateProduct(id: string) {
+  const supabase = await createClient()
+
+  const { data: original } = await supabase
+    .from('products')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (!original) return { error: '원본 상품을 찾을 수 없습니다.' }
+
+  const slug = generateSlug(original.name + '-복사')
+  const { data: newProduct, error } = await supabase
+    .from('products')
+    .insert({
+      name: original.name + ' (복사)',
+      slug,
+      summary: original.summary,
+      description: original.description,
+      price: original.price,
+      thumbnail_url: original.thumbnail_url,
+      sub_images: original.sub_images,
+      category_nos: original.category_nos,
+      status: 'hidden',
+      is_active: false,
+    })
+    .select('id')
+    .single()
+
+  if (error) return { error: '상품 복제 중 오류가 발생했습니다.' }
+
+  // 카테고리 연결 복제
+  const { data: relations } = await supabase
+    .from('product_categories')
+    .select('category_id')
+    .eq('product_id', id)
+
+  if (relations && relations.length > 0 && newProduct) {
+    await supabase.from('product_categories').insert(
+      relations.map((r) => ({ product_id: newProduct.id, category_id: r.category_id }))
+    )
+  }
+
+  revalidatePath('/admin/products')
+  return { success: true }
+}
+
 export async function deleteProduct(id: string) {
   const supabase = await createClient()
 

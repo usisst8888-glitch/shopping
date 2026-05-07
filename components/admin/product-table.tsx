@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { updateProductStatus } from '@/app/admin/(dashboard)/products/actions'
+import { updateProductStatus, duplicateProduct } from '@/app/admin/(dashboard)/products/actions'
 
 type ProductStatus = 'active' | 'soldout' | 'hidden'
 
@@ -105,6 +105,18 @@ export function ProductTable({
                 {statusConfig[s].label}
               </button>
             ))}
+            <button
+              onClick={async () => {
+                for (const id of selected) {
+                  await duplicateProduct(id)
+                }
+                setSelected(new Set())
+                router.refresh()
+              }}
+              className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+            >
+              복제
+            </button>
             <button
               onClick={() => setSelected(new Set())}
               className="rounded-lg border border-zinc-600 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800"
