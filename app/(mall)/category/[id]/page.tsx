@@ -68,6 +68,18 @@ export default async function CategoryPage({
     .eq('parent_id', rootCategory.id)
     .order('sort_order')
 
+  // 3차 카테고리 (현재 선택이 2차이면 그 하위)
+  const selectedSubId = category.level === 2 ? category.id : null
+  let thirdCategories: { id: string; name: string; slug: string | null; category_no: string | null }[] = []
+  if (selectedSubId) {
+    const { data: tc } = await supabase
+      .from('categories')
+      .select('id, name, slug, category_no')
+      .eq('parent_id', selectedSubId)
+      .order('sort_order')
+    thirdCategories = tc ?? []
+  }
+
   // 현재 선택된 카테고리의 하위 + 자기 자신의 category_no 수집
   const { data: children } = await supabase
     .from('categories')
@@ -149,6 +161,31 @@ export default async function CategoryPage({
                 </Link>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* 3차 카테고리 그리드 */}
+      {thirdCategories.length > 0 && (
+        <div className="border-b border-zinc-200 bg-white">
+          <div className="mx-auto max-w-5xl px-4 py-4">
+            <div className="grid grid-cols-4 gap-px border border-zinc-200">
+              <Link
+                href={`/category/${category.slug || category.id}`}
+                className="bg-white px-4 py-3 text-center text-[13px] text-zinc-700 hover:bg-zinc-50"
+              >
+                Show All
+              </Link>
+              {thirdCategories.map((tc) => (
+                <Link
+                  key={tc.id}
+                  href={`/category/${tc.slug || tc.id}`}
+                  className="bg-white px-4 py-3 text-center text-[13px] text-zinc-700 hover:bg-zinc-50"
+                >
+                  {tc.name}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       )}
