@@ -80,6 +80,20 @@ export function DesignManager({
   )
   const [newBrand, setNewBrand] = useState('')
 
+  // 네비게이션 드래그 앤 드롭
+  const [navDragIndex, setNavDragIndex] = useState<number | null>(null)
+
+  function handleNavDrop(targetIndex: number) {
+    if (navDragIndex === null || navDragIndex === targetIndex) return
+    setNavItems((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(navDragIndex, 1)
+      next.splice(targetIndex, 0, moved)
+      return next
+    })
+    setNavDragIndex(null)
+  }
+
   function addNavItem() {
     setNavItems([...navItems, { label: '', href: '/' }])
   }
@@ -348,15 +362,30 @@ export function DesignManager({
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-1">
           {navItems.map((item, index) => (
-            <div key={index}>
+            <div
+              key={index}
+              draggable
+              onDragStart={() => setNavDragIndex(index)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleNavDrop(index)}
+              onDragEnd={() => setNavDragIndex(null)}
+              className={`rounded-lg border p-3 transition ${
+                navDragIndex === index ? 'border-blue-400 opacity-50' : 'border-zinc-200'
+              }`}
+            >
               <div className="flex items-center gap-3">
+                <span className="cursor-grab text-zinc-400 active:cursor-grabbing">
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M7 2a2 2 0 10.001 4.001A2 2 0 007 2zm0 6a2 2 0 10.001 4.001A2 2 0 007 8zm0 6a2 2 0 10.001 4.001A2 2 0 007 14zm6-8a2 2 0 10-.001-4.001A2 2 0 0013 6zm0 2a2 2 0 10.001 4.001A2 2 0 0013 8zm0 6a2 2 0 10.001 4.001A2 2 0 0013 14z" />
+                  </svg>
+                </span>
                 <input
                   type="text"
                   value={item.label}
                   onChange={(e) => updateNavItem(index, 'label', e.target.value)}
-                  className="w-40 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                  className="w-36 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
                   placeholder="메뉴명"
                 />
                 <input
