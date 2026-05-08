@@ -13,10 +13,16 @@ export type Banner = {
   created_at: string
 }
 
-export type NavItem = {
+export type NavSubItem = {
   label: string
   href: string
   children?: { label: string; href: string }[]
+}
+
+export type NavItem = {
+  label: string
+  href: string
+  children?: NavSubItem[]
 }
 
 // ── 레이아웃 섹션 타입 ──

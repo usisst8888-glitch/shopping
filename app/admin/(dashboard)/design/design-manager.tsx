@@ -329,7 +329,14 @@ export function DesignManager({
                     setNavItems([...navItems, {
                       label: cat.name,
                       href: `/category/${cat.id}`,
-                      children: subs.length > 0 ? subs.map((s) => ({ label: s.name, href: `/category/${s.id}` })) : undefined,
+                      children: subs.length > 0 ? subs.map((s) => {
+                        const thirds = categories.filter((c) => c.parent_id === s.id)
+                        return {
+                          label: s.name,
+                          href: `/category/${s.id}`,
+                          children: thirds.length > 0 ? thirds.map((t) => ({ label: t.name, href: `/category/${t.id}` })) : undefined,
+                        }
+                      }) : undefined,
                     }])
                   }
                 } else if (val.startsWith('board:')) {
