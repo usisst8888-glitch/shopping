@@ -56,6 +56,27 @@ export async function upsertDesign(siteId: string, formData: FormData) {
     navItems = []
   }
 
+  // nav_items의 2차 children에 3차 children 자동 채우기
+  if (navItems.length > 0) {
+    const { data: allCats } = await supabase.from('categories').select('id, name, parent_id').order('sort_order')
+    if (allCats) {
+      for (const item of navItems) {
+        if (item.children) {
+          for (const child of item.children) {
+            // href에서 카테고리 ID 추출
+            const catId = child.href.split('/category/')[1]
+            if (catId) {
+              const thirds = allCats.filter((c) => c.parent_id === catId)
+              if (thirds.length > 0) {
+                child.children = thirds.map((t) => ({ label: t.name, href: `/category/${t.id}` }))
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   let brandsList: string[] = []
   try {
     brandsList = JSON.parse(formData.get('brands_list') as string || '[]')
