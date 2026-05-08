@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { TiptapEditor } from '@/components/admin/tiptap-editor'
 
 export function WriteForm({
   boardId,
@@ -22,6 +23,7 @@ export function WriteForm({
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [content, setContent] = useState('')
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -30,7 +32,6 @@ export function WriteForm({
 
     const formData = new FormData(e.currentTarget)
     const title = (formData.get('title') as string)?.trim()
-    const content = (formData.get('content') as string)?.trim()
     const category = (formData.get('category') as string)?.trim() || null
     const isNotice = formData.get('is_notice') === 'on'
 
@@ -91,12 +92,7 @@ export function WriteForm({
       </div>
 
       <div>
-        <textarea
-          name="content"
-          rows={15}
-          placeholder="내용을 입력하세요"
-          className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-        />
+        <TiptapEditor content={content} onChange={setContent} minHeight="400px" />
       </div>
 
       <div className="flex gap-2">
