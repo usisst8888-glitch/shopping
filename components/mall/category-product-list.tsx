@@ -23,41 +23,24 @@ export function CategoryProductList({
 }) {
   const pathname = usePathname()
   const storageKey = `cat-products-${pathname}`
-  const restoredRef = useRef(false)
 
-  const [products, setProducts] = useState<Product[]>(() => {
-    if (typeof window === 'undefined') return initialProducts
+  const [products, setProducts] = useState<Product[]>(initialProducts)
+  const [loading, setLoading] = useState(false)
+  const hasMore = products.length < total
+
+  // 마운트 시 sessionStorage에서 복원
+  useEffect(() => {
     try {
       const saved = sessionStorage.getItem(storageKey)
       if (saved) {
         const parsed = JSON.parse(saved)
-        if (parsed.nos === categoryNos.join(',') && parsed.products?.length > 0) {
-          restoredRef.current = true
-          return parsed.products
+        if (parsed.nos === categoryNos.join(',') && parsed.products?.length > initialProducts.length) {
+          setProducts(parsed.products)
+          setTimeout(() => window.scrollTo(0, parsed.scrollY || 0), 100)
         }
       }
     } catch {}
-    return initialProducts
-  })
-
-  const [loading, setLoading] = useState(false)
-  const hasMore = products.length < total
-
-  // 스크롤 위치 복원
-  useEffect(() => {
-    if (restoredRef.current) {
-      try {
-        const saved = sessionStorage.getItem(storageKey)
-        if (saved) {
-          const parsed = JSON.parse(saved)
-          if (parsed.scrollY) {
-            setTimeout(() => window.scrollTo(0, parsed.scrollY), 100)
-          }
-        }
-      } catch {}
-      restoredRef.current = false
-    }
-  }, [storageKey])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 상품 변경 시 sessionStorage 저장
   useEffect(() => {
