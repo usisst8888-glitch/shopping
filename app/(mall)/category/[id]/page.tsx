@@ -154,24 +154,24 @@ export default async function CategoryPage({
       {/* 2차 카테고리 이미지 썸네일 */}
       {subCategories && subCategories.length > 0 && (
         <div className="bg-white py-6">
-          <div className="mx-auto max-w-5xl px-4">
-            <div className="grid grid-cols-3 gap-4 md:grid-cols-6">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="grid grid-cols-3 gap-3 md:grid-cols-9">
               {subCategories.map((sub) => {
                 const isActive = sub.id === category.id || (category.level === 3 && category.parent_id === sub.id)
                 return (
                   <Link
                     key={sub.id}
                     href={`/category/${sub.slug || sub.id}`}
-                    className={`flex flex-col items-center gap-2 ${isActive ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
+                    className={`flex flex-col items-center gap-2 ${isActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
                   >
-                    <div className={`h-16 w-24 overflow-hidden rounded-full border-2 ${isActive ? 'border-zinc-900' : 'border-zinc-200'} bg-zinc-100`}>
+                    <div className={`aspect-square w-full overflow-hidden rounded-lg border ${isActive ? 'border-zinc-900' : 'border-zinc-200'} bg-zinc-100`}>
                       {sub.image_url ? (
                         <img src={sub.image_url} alt={sub.name} className="h-full w-full object-cover" />
                       ) : (
-                        <div className="flex h-full items-center justify-center text-[10px] text-zinc-400">{sub.name.slice(0, 2)}</div>
+                        <div className="flex h-full items-center justify-center text-xs text-zinc-400">{sub.name.slice(0, 2)}</div>
                       )}
                     </div>
-                    <span className={`text-[11px] text-center ${isActive ? 'font-bold text-zinc-900' : 'text-zinc-500'}`}>
+                    <span className={`text-xs text-center ${isActive ? 'font-bold text-zinc-900' : 'text-zinc-600'}`}>
                       {sub.name}
                     </span>
                   </Link>
