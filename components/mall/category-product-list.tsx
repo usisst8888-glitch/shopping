@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 type Product = {
   id: string
@@ -20,9 +21,67 @@ export function CategoryProductList({
   categoryNos: string[]
   total: number
 }) {
-  const [products, setProducts] = useState<Product[]>(initialProducts)
+  const pathname = usePathname()
+  const storageKey = `cat-products-${pathname}`
+  const restoredRef = useRef(false)
+
+  const [products, setProducts] = useState<Product[]>(() => {
+    if (typeof window === 'undefined') return initialProducts
+    try {
+      const saved = sessionStorage.getItem(storageKey)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed.nos === categoryNos.join(',') && parsed.products?.length > 0) {
+          restoredRef.current = true
+          return parsed.products
+        }
+      }
+    } catch {}
+    return initialProducts
+  })
+
   const [loading, setLoading] = useState(false)
   const hasMore = products.length < total
+
+  // 스크롤 위치 복원
+  useEffect(() => {
+    if (restoredRef.current) {
+      try {
+        const saved = sessionStorage.getItem(storageKey)
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (parsed.scrollY) {
+            setTimeout(() => window.scrollTo(0, parsed.scrollY), 100)
+          }
+        }
+      } catch {}
+      restoredRef.current = false
+    }
+  }, [storageKey])
+
+  // 상품 변경 시 sessionStorage 저장
+  useEffect(() => {
+    if (products.length > initialProducts.length) {
+      try {
+        sessionStorage.setItem(storageKey, JSON.stringify({
+          nos: categoryNos.join(','),
+          products,
+          scrollY: window.scrollY,
+        }))
+      } catch {}
+    }
+  }, [products, categoryNos, storageKey, initialProducts.length])
+
+  // 링크 클릭 시 현재 스크롤 위치 저장
+  function handleClick() {
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify({
+        nos: categoryNos.join(','),
+        products,
+        scrollY: window.scrollY,
+      }))
+    } catch {}
+  }
 
   async function loadMore() {
     setLoading(true)
@@ -49,6 +108,7 @@ export function CategoryProductList({
           <Link
             key={product.id}
             href={`/product/${product.slug || product.id}`}
+            onClick={handleClick}
             className="group"
           >
             <div className="aspect-square overflow-hidden bg-zinc-100">
