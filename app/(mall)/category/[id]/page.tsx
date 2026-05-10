@@ -164,7 +164,7 @@ export default async function CategoryPage({
                     href={`/category/${sub.slug || sub.id}`}
                     className={`flex flex-col items-center gap-2 ${isActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
                   >
-                    <div className={`aspect-square w-full overflow-hidden rounded-lg border ${isActive ? 'border-zinc-900' : 'border-zinc-200'} bg-zinc-100`}>
+                    <div className="aspect-square w-full overflow-hidden rounded-lg bg-zinc-100">
                       {sub.image_url ? (
                         <img src={sub.image_url} alt={sub.name} className="h-full w-full object-cover" />
                       ) : (
