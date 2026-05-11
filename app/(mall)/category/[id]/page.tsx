@@ -186,25 +186,35 @@ export default async function CategoryPage({
       {thirdCategories.length > 0 && (
         <div className="bg-white">
           <div className="mx-auto max-w-5xl px-4 pb-4">
-            <div className="grid grid-cols-4 border border-zinc-200">
-              <Link
-                href={`/category/${(category.level === 3 && category.parent_id) ? category.parent_id : (category.slug || category.id)}`}
-                className="border-b border-r border-zinc-200 px-4 py-3 text-center text-[13px] text-zinc-700 hover:bg-zinc-50"
-              >
-                Show All
-              </Link>
-              {thirdCategories.map((tc) => (
-                <Link
-                  key={tc.id}
-                  href={`/category/${tc.slug || tc.id}`}
-                  className={`border-b border-r border-zinc-200 px-4 py-3 text-center text-[13px] hover:bg-zinc-50 ${
-                    tc.id === category.id ? 'font-bold text-zinc-900' : 'text-zinc-700'
-                  }`}
-                >
-                  {tc.name}
-                </Link>
-              ))}
-            </div>
+            {(() => {
+              const allItems = [
+                { id: 'show-all', name: 'Show All', href: `/category/${(category.level === 3 && category.parent_id) ? category.parent_id : (category.slug || category.id)}`, isActive: false },
+                ...thirdCategories.map((tc) => ({ id: tc.id, name: tc.name, href: `/category/${tc.slug || tc.id}`, isActive: tc.id === category.id })),
+              ]
+              const rows: typeof allItems[] = []
+              for (let i = 0; i < allItems.length; i += 4) {
+                rows.push(allItems.slice(i, i + 4))
+              }
+              return (
+                <div className="border-t border-l border-zinc-200">
+                  {rows.map((row, ri) => (
+                    <div key={ri} className="flex">
+                      {row.map((item) => (
+                        <Link
+                          key={item.id}
+                          href={item.href}
+                          className={`flex-1 border-b border-r border-zinc-200 px-4 py-3 text-center text-[13px] hover:bg-zinc-50 ${
+                            item.isActive ? 'font-bold text-zinc-900' : 'text-zinc-700'
+                          }`}
+                        >
+                          {item.name}
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
           </div>
         </div>
       )}
