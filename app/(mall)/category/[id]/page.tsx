@@ -155,7 +155,7 @@ export default async function CategoryPage({
       {subCategories && subCategories.length > 0 && (
         <div className="bg-white py-6">
           <div className="mx-auto max-w-7xl px-4">
-            <div className="grid grid-cols-3 gap-3 md:grid-cols-9">
+            <div className="grid grid-cols-4 gap-3 md:grid-cols-9">
               {subCategories.map((sub) => {
                 const isActive = sub.id === category.id || (category.level === 3 && category.parent_id === sub.id)
                 return (
