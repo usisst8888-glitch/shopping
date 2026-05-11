@@ -44,7 +44,7 @@ export default async function CategoryPage({
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
   const { data: category } = await supabase
     .from('categories')
-    .select('id, name, slug, category_no, level, parent_id, banner_url, banner_title')
+    .select('id, name, slug, category_no, level, parent_id, banner_url, banner_title, banner_video_url')
     .eq(isUuid ? 'id' : 'slug', id)
     .single()
 
@@ -55,7 +55,7 @@ export default async function CategoryPage({
   if (category.level === 2 && category.parent_id) {
     const { data: parent } = await supabase
       .from('categories')
-      .select('id, name, slug, category_no, banner_url, banner_title')
+      .select('id, name, slug, category_no, banner_url, banner_title, banner_video_url')
       .eq('id', category.parent_id)
       .single()
     if (parent) rootCategory = { ...parent, level: 1, parent_id: null }
@@ -69,7 +69,7 @@ export default async function CategoryPage({
     if (parent2?.parent_id) {
       const { data: parent1 } = await supabase
         .from('categories')
-        .select('id, name, slug, category_no, banner_url, banner_title')
+        .select('id, name, slug, category_no, banner_url, banner_title, banner_video_url')
         .eq('id', parent2.parent_id)
         .single()
       if (parent1) rootCategory = { ...parent1, level: 1, parent_id: null }
@@ -131,12 +131,29 @@ export default async function CategoryPage({
   }
 
   const bannerUrl = rootCategory.banner_url || category.banner_url
+  const bannerVideoUrl = (rootCategory as any).banner_video_url || (category as any).banner_video_url
   const bannerTitle = rootCategory.banner_title || category.banner_title || rootCategory.name
 
   return (
     <div>
       {/* 배너 */}
-      {bannerUrl ? (
+      {bannerVideoUrl ? (
+        <div className="relative mx-auto max-w-[1920px]">
+          <div className="relative h-[200px] md:h-[300px] overflow-hidden">
+            <video
+              src={bannerVideoUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+              <h1 className="text-3xl font-bold tracking-wider text-white md:text-5xl">{bannerTitle}</h1>
+            </div>
+          </div>
+        </div>
+      ) : bannerUrl ? (
         <div className="relative mx-auto max-w-[1920px]">
           <div className="relative h-[200px] md:h-[300px] overflow-hidden">
             <img src={bannerUrl} alt={bannerTitle} className="h-full w-full object-cover" />

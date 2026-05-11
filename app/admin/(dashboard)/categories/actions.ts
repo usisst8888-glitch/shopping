@@ -97,6 +97,7 @@ export async function createCategory(formData: FormData) {
 
   const bannerUrlVal = (formData.get('banner_url') as string)?.trim() || null
   const bannerTitleVal = (formData.get('banner_title') as string)?.trim() || null
+  const bannerVideoUrlVal = (formData.get('banner_video_url') as string)?.trim() || null
 
   const { error } = await supabase.from('categories').insert({
     name,
@@ -109,6 +110,7 @@ export async function createCategory(formData: FormData) {
     is_main: isMain,
     banner_url: bannerUrlVal,
     banner_title: bannerTitleVal,
+    banner_video_url: bannerVideoUrlVal,
   })
 
   if (error) {
@@ -151,10 +153,11 @@ export async function updateCategory(formData: FormData) {
 
   const bannerUrlVal = (formData.get('banner_url') as string)?.trim() || null
   const bannerTitleVal = (formData.get('banner_title') as string)?.trim() || null
+  const bannerVideoUrlVal = (formData.get('banner_video_url') as string)?.trim() || null
 
   const { error } = await supabase
     .from('categories')
-    .update({ name, slug, category_no: categoryNo, sort_order: sortOrder, image_url: imageUrl, is_main: isMain, banner_url: bannerUrlVal, banner_title: bannerTitleVal })
+    .update({ name, slug, category_no: categoryNo, sort_order: sortOrder, image_url: imageUrl, is_main: isMain, banner_url: bannerUrlVal, banner_title: bannerTitleVal, banner_video_url: bannerVideoUrlVal })
     .eq('id', id)
 
   if (error) {

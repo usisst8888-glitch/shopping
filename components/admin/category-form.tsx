@@ -22,6 +22,7 @@ export function CategoryForm({
   const [imageUrl, setImageUrl] = useState(category?.image_url ?? '')
   const [bannerUrl, setBannerUrl] = useState((category as any)?.banner_url ?? '')
   const [bannerTitle, setBannerTitle] = useState((category as any)?.banner_title ?? '')
+  const [bannerVideoUrl, setBannerVideoUrl] = useState((category as any)?.banner_video_url ?? '')
   const [uploading, setUploading] = useState(false)
   const [isMain, setIsMain] = useState(category?.is_main ?? false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -54,6 +55,7 @@ export function CategoryForm({
     formData.set('image_url', imageUrl)
     formData.set('banner_url', bannerUrl)
     formData.set('banner_title', bannerTitle)
+    formData.set('banner_video_url', bannerVideoUrl)
     formData.set('is_main', String(isMain))
 
     let result
@@ -195,7 +197,14 @@ export function CategoryForm({
               placeholder="배너 타이틀 (예: HIGH-END)"
               className="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm"
             />
-            <p className="mt-1 text-xs text-zinc-400">카테고리 페이지 상단에 표시되는 배너입니다. 권장: 1920x400px</p>
+            <input
+              type="text"
+              value={bannerVideoUrl}
+              onChange={(e) => setBannerVideoUrl(e.target.value)}
+              placeholder="배너 영상 URL (선택, 예: https://...mp4)"
+              className="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm"
+            />
+            <p className="mt-1 text-xs text-zinc-400">이미지 또는 영상 중 하나를 등록하세요. 영상이 있으면 영상이 우선 표시됩니다.</p>
           </div>
         )}
 
