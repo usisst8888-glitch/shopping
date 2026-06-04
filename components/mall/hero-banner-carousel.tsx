@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Banner } from '@/lib/types/design'
 
-export function HeroBannerCarousel({ banners }: { banners: Banner[] }) {
+export function HeroBannerCarousel({ banners, autoSeconds }: { banners: Banner[]; autoSeconds?: number }) {
   const [current, setCurrent] = useState(0)
   const [paused, setPaused] = useState(false)
 
@@ -15,9 +15,12 @@ export function HeroBannerCarousel({ banners }: { banners: Banner[] }) {
 
   useEffect(() => {
     if (banners.length <= 1 || paused) return
-    const timer = setInterval(next, 5000)
+    // 미설정(undefined)이면 5초, 0이면 자동 넘김 끔
+    const ms = autoSeconds === undefined ? 5000 : autoSeconds * 1000
+    if (ms <= 0) return
+    const timer = setInterval(next, ms)
     return () => clearInterval(timer)
-  }, [banners.length, paused, next])
+  }, [banners.length, paused, next, autoSeconds])
 
   if (banners.length === 0) return null
 
@@ -25,61 +28,38 @@ export function HeroBannerCarousel({ banners }: { banners: Banner[] }) {
 
   return (
     <section
-      className="relative mx-auto max-w-[1920px] overflow-hidden"
+      className="relative mx-auto max-w-[1920px]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="relative h-[480px] w-full">
+      <div className="relative w-full">
         {banners.map((b, index) => (
           <div
             key={b.id}
-            className={`absolute inset-0 transition-opacity duration-700 ${
+            className={`${index === 0 ? 'relative' : 'absolute inset-0'} transition-opacity duration-700 ${
               index === current ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           >
             {/* 모바일 이미지 */}
             {b.mobile_image_url && (
-              <Image
+              <img
                 src={b.mobile_image_url}
                 alt={b.title ?? '배너'}
-                fill
-                className="object-cover md:hidden"
-                priority={index === 0}
+                className="w-full md:hidden"
               />
             )}
             {/* 데스크탑 이미지 */}
-            <Image
+            <img
               src={b.image_url}
               alt={b.title ?? '배너'}
-              fill
-              className={`object-cover ${b.mobile_image_url ? 'hidden md:block' : ''}`}
-              priority={index === 0}
+              className={`w-full ${b.mobile_image_url ? 'hidden md:block' : ''}`}
             />
           </div>
         ))}
 
-        {/* 텍스트 오버레이 */}
-        {(banner.title || banner.subtitle || banner.link_url) && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 text-center text-white">
-            {banner.title && (
-              <h2 className="mb-4 text-3xl font-bold md:text-5xl">
-                {banner.title}
-              </h2>
-            )}
-            {banner.subtitle && (
-              <p className="mb-6 max-w-lg text-sm text-white/80 md:text-base">
-                {banner.subtitle}
-              </p>
-            )}
-            {banner.link_url && (
-              <Link
-                href={banner.link_url}
-                className="rounded-full bg-white px-8 py-3 text-sm font-medium text-zinc-900 hover:bg-zinc-100"
-              >
-                {banner.link_text || '자세히 보기'}
-              </Link>
-            )}
-          </div>
+        {/* 배너 클릭 링크 */}
+        {banner.link_url && (
+          <Link href={banner.link_url} className="absolute inset-0 z-[1]" />
         )}
       </div>
 

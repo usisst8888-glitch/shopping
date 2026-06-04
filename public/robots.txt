@@ -4,4 +4,4 @@ Disallow: /admin/
 Disallow: /api/
 Disallow: /auth/
 
-Sitemap: https://www.kracfive.com/sitemap.xml
+Sitemap: https://www.luckyple.com/sitemap.xml

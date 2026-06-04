@@ -34,9 +34,13 @@ export async function generateMetadata({
 
 export default async function CategoryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ page?: string }>
 }) {
+  const sp = await searchParams
+  const requestedPage = Math.max(1, parseInt(sp.page ?? '1') || 1)
   const { id: rawId } = await params
   const id = decodeURIComponent(rawId)
   const supabase = await createClient()
@@ -44,7 +48,7 @@ export default async function CategoryPage({
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
   const { data: category } = await supabase
     .from('categories')
-    .select('id, name, slug, category_no, level, parent_id, banner_url, banner_title, banner_video_url')
+    .select('id, name, slug, category_no, level, parent_id, banner_url, banner_video_url, banner_show_overlay')
     .eq(isUuid ? 'id' : 'slug', id)
     .single()
 
@@ -55,7 +59,7 @@ export default async function CategoryPage({
   if (category.level === 2 && category.parent_id) {
     const { data: parent } = await supabase
       .from('categories')
-      .select('id, name, slug, category_no, banner_url, banner_title, banner_video_url')
+      .select('id, name, slug, category_no, banner_url, banner_video_url, banner_show_overlay')
       .eq('id', category.parent_id)
       .single()
     if (parent) rootCategory = { ...parent, level: 1, parent_id: null }
@@ -69,7 +73,7 @@ export default async function CategoryPage({
     if (parent2?.parent_id) {
       const { data: parent1 } = await supabase
         .from('categories')
-        .select('id, name, slug, category_no, banner_url, banner_title, banner_video_url')
+        .select('id, name, slug, category_no, banner_url, banner_video_url, banner_show_overlay')
         .eq('id', parent2.parent_id)
         .single()
       if (parent1) rootCategory = { ...parent1, level: 1, parent_id: null }
@@ -114,8 +118,18 @@ export default async function CategoryPage({
     ...grandChildNos,
   ].filter(Boolean) as string[]
 
-  let initialProducts: any[] = []
+  let initialProducts: { id: string; name: string; slug: string | null; price: number; thumbnail_url: string | null }[] = []
   let total = 0
+
+  // 카테고리 페이징 설정 (없으면 기본값)
+  const paginationMode: 'load_more' | 'pages' =
+    (category as { pagination_mode?: 'load_more' | 'pages' }).pagination_mode ?? 'load_more'
+  const productsPerRow = (category as { products_per_row?: number }).products_per_row ?? 4
+  const productsRows = (category as { products_rows?: number }).products_rows ?? 10
+  const pageSize = Math.max(1, productsPerRow * productsRows)
+  const page = paginationMode === 'pages' ? requestedPage : 1
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
 
   if (allNos.length > 0) {
     const { data, count } = await supabase
@@ -124,22 +138,26 @@ export default async function CategoryPage({
       .overlaps('category_nos', allNos)
       .eq('is_active', true)
       .order('product_no', { ascending: false, nullsFirst: false })
-      .range(0, 39)
+      .order('created_at', { ascending: false })
+      .range(from, to)
 
     initialProducts = data ?? []
     total = count ?? 0
   }
 
-  const bannerUrl = rootCategory.banner_url || category.banner_url
-  const bannerVideoUrl = (rootCategory as any).banner_video_url || (category as any).banner_video_url
-  const bannerTitle = rootCategory.banner_title || category.banner_title || rootCategory.name
+  // 카테고리 배너 (해당 카테고리에 설정된 배너 우선, 없으면 1차 카테고리 배너로 폴백)
+  // 오버레이(텍스트·버튼) 표시 여부는 배너를 제공한 카테고리의 설정을 따른다.
+  const bannerSource = (category.banner_video_url || category.banner_url) ? category : rootCategory
+  const bannerUrl: string | null = bannerSource.banner_url ?? null
+  const bannerVideoUrl: string | null = bannerSource.banner_video_url ?? null
+  const showBannerOverlay: boolean = bannerSource.banner_show_overlay ?? true
 
   return (
     <div>
       {/* 배너 */}
       {bannerVideoUrl ? (
         <div className="relative mx-auto max-w-[1920px]">
-          <div className="relative h-[200px] md:h-[300px] overflow-hidden">
+          <div className="relative h-[200px] md:h-[450px] overflow-hidden">
             <video
               src={bannerVideoUrl}
               autoPlay
@@ -148,33 +166,53 @@ export default async function CategoryPage({
               playsInline
               className="h-full w-full object-cover"
             />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-              <h1 className="text-3xl font-bold tracking-wider text-white md:text-5xl">{bannerTitle}</h1>
-            </div>
+            {showBannerOverlay && (
+              <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-6 md:gap-8">
+                <div className="flex flex-col items-center">
+                  <span className="text-5xl md:text-8xl text-white tracking-widest" style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic' }}>HIGH-END</span>
+                  <span className="text-2xl md:text-4xl text-white tracking-[0.5em] md:tracking-[0.55em]" style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic' }}>MYEONGPLE</span>
+                </div>
+                <div className="flex gap-3 md:gap-4">
+                  <Link href="/board/process" className="bg-black border border-white/30 px-10 py-2.5 md:px-16 md:py-3 text-sm md:text-base text-white tracking-wider hover:bg-zinc-800 transition">제작과정</Link>
+                  <Link href="/board/review" className="bg-black border border-white/30 px-10 py-2.5 md:px-16 md:py-3 text-sm md:text-base text-white tracking-wider hover:bg-zinc-800 transition">구매후기</Link>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : bannerUrl ? (
         <div className="relative mx-auto max-w-[1920px]">
-          <div className="relative h-[200px] md:h-[300px] overflow-hidden">
-            <img src={bannerUrl} alt={bannerTitle} className="h-full w-full object-cover" />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-              <h1 className="text-3xl font-bold tracking-wider text-white md:text-5xl">{bannerTitle}</h1>
-            </div>
+          <div className="h-[200px] md:h-[450px] overflow-hidden">
+            <img src={bannerUrl} alt="카테고리 배너" className="h-full w-full object-cover" />
           </div>
         </div>
-      ) : (
-        <div className="bg-zinc-900 py-12 text-center">
-          <h1 className="text-3xl font-bold tracking-wider text-white md:text-4xl">{bannerTitle}</h1>
-        </div>
-      )}
+      ) : null}
 
       {/* 2차 카테고리 이미지 썸네일 */}
       {subCategories && subCategories.length > 0 && (
         <div className="bg-white py-6">
-          <div className="mx-auto max-w-7xl px-4">
-            <div className="grid grid-cols-4 gap-3 md:grid-cols-9">
+          <div className="mx-auto max-w-5xl px-4">
+            <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 sm:gap-5">
               {subCategories.map((sub) => {
                 const isActive = sub.id === category.id || (category.level === 3 && category.parent_id === sub.id)
+                const hasImage = !!sub.image_url
+
+                if (!hasImage) {
+                  return (
+                    <Link
+                      key={sub.id}
+                      href={`/category/${sub.slug || sub.id}`}
+                      className={`flex items-center justify-center rounded-lg border px-3 py-3 text-center text-[13px] transition ${
+                        isActive
+                          ? 'border-zinc-900 bg-zinc-900 font-bold text-white'
+                          : 'border-zinc-300 bg-white text-zinc-700 hover:border-zinc-900 hover:bg-zinc-50'
+                      }`}
+                    >
+                      {sub.name}
+                    </Link>
+                  )
+                }
+
                 return (
                   <Link
                     key={sub.id}
@@ -182,13 +220,9 @@ export default async function CategoryPage({
                     className={`flex flex-col items-center gap-2 ${isActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
                   >
                     <div className="aspect-square w-full overflow-hidden rounded-lg bg-zinc-100">
-                      {sub.image_url ? (
-                        <img src={sub.image_url} alt={sub.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-xs text-zinc-400">{sub.name.slice(0, 2)}</div>
-                      )}
+                      <img src={sub.image_url} alt={sub.name} className="h-full w-full object-cover" />
                     </div>
-                    <span className={`text-xs text-center ${isActive ? 'font-bold text-zinc-900' : 'text-zinc-600'}`}>
+                    <span className={`text-[13px] text-center leading-tight ${isActive ? 'font-bold text-zinc-900' : 'text-zinc-600'}`}>
                       {sub.name}
                     </span>
                   </Link>
@@ -246,6 +280,11 @@ export default async function CategoryPage({
           initialProducts={initialProducts}
           categoryNos={allNos}
           total={total}
+          fromCategoryId={category.id}
+          paginationMode={paginationMode}
+          perRow={productsPerRow}
+          rows={productsRows}
+          page={page}
         />
       </div>
     </div>

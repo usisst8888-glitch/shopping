@@ -4,7 +4,16 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import TextAlign from '@tiptap/extension-text-align'
-import { useRef, useState, useCallback, useEffect } from 'react'
+import { TextStyle } from '@tiptap/extension-text-style'
+import Color from '@tiptap/extension-color'
+import Highlight from '@tiptap/extension-highlight'
+import { useRef, useState, useCallback } from 'react'
+import {
+  Bold, Italic, Underline, Strikethrough, Eraser,
+  Heading2, Heading3, AlignLeft, AlignCenter, AlignRight,
+  List, ListOrdered, Link2, Minus, Image as ImageIcon, Baseline, Highlighter, Images,
+} from 'lucide-react'
+import { ToolBtn, Divider, FontSizeDropdown, ColorDropdown } from './editor-ui'
 
 // 이미지에 style 속성 추가
 const CustomImage = Image.extend({
@@ -17,6 +26,23 @@ const CustomImage = Image.extend({
         renderHTML: (attributes) => {
           if (!attributes.style) return {}
           return { style: attributes.style }
+        },
+      },
+    }
+  },
+})
+
+// fontSize를 TextStyle에 커스텀 attribute로 추가
+const FontSize = TextStyle.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      fontSize: {
+        default: null,
+        parseHTML: (element: HTMLElement) => element.style.fontSize || null,
+        renderHTML: (attributes: Record<string, any>) => {
+          if (!attributes.fontSize) return {}
+          return { style: `font-size: ${attributes.fontSize}` }
         },
       },
     }
@@ -47,11 +73,12 @@ export function TiptapEditor({
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      StarterKit,
+      StarterKit.configure({ link: { openOnClick: false } }),
       CustomImage.configure({ inline: false }),
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      FontSize,
+      Color,
+      Highlight.configure({ multicolor: true }),
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -200,6 +227,33 @@ export function TiptapEditor({
     return false
   }
 
+  function setFontSize(size: string) {
+    editor!.chain().focus().setMark('textStyle', { fontSize: size }).run()
+  }
+
+  function applyTextColor(color: string) {
+    editor!.chain().focus().setColor(color).run()
+  }
+
+  function applyHighlight(color: string) {
+    editor!.chain().focus().toggleHighlight({ color }).run()
+  }
+
+  function clearFormat() {
+    editor!.chain().focus().unsetAllMarks().run()
+  }
+
+  function handleLink() {
+    const prev = editor!.getAttributes('link').href as string | undefined
+    const url = window.prompt('링크 URL을 입력하세요', prev || 'https://')
+    if (url === null) return
+    if (url.trim() === '') {
+      editor!.chain().focus().extendMarkRange('link').unsetLink().run()
+      return
+    }
+    editor!.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run()
+  }
+
   return (
     <div
       className={`overflow-hidden rounded-lg border ${
@@ -213,93 +267,51 @@ export function TiptapEditor({
       onDrop={() => setDragOver(false)}
     >
       {/* 툴바 */}
-      <div className="flex flex-wrap items-center gap-1 border-b border-zinc-200 bg-zinc-50 p-2">
-        <ToolButton
-          active={editor.isActive('bold')}
-          onClick={() => editor.chain().focus().toggleBold().run()}
-        >
-          B
-        </ToolButton>
-        <ToolButton
-          active={editor.isActive('italic')}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-        >
-          I
-        </ToolButton>
-        <ToolButton
-          active={editor.isActive('strike')}
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-        >
-          S
-        </ToolButton>
+      <div className="flex flex-wrap items-center gap-0.5 bg-zinc-700 px-2 py-1.5">
+        <FontSizeDropdown onPick={setFontSize} />
+        <ColorDropdown
+          title="글자색"
+          icon={<Baseline size={16} />}
+          current={editor.getAttributes('textStyle').color}
+          onPick={applyTextColor}
+        />
+        <ColorDropdown
+          title="배경색(형광펜)"
+          icon={<Highlighter size={16} />}
+          current={editor.getAttributes('highlight').color}
+          onPick={applyHighlight}
+        />
 
-        <div className="mx-1 w-px bg-zinc-200" />
+        <Divider />
 
-        <ToolButton
-          active={editor.isActive('heading', { level: 2 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        >
-          H2
-        </ToolButton>
-        <ToolButton
-          active={editor.isActive('heading', { level: 3 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        >
-          H3
-        </ToolButton>
+        <ToolBtn title="굵게" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={16} /></ToolBtn>
+        <ToolBtn title="기울임" active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={16} /></ToolBtn>
+        <ToolBtn title="밑줄" active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()}><Underline size={16} /></ToolBtn>
+        <ToolBtn title="취소선" active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()}><Strikethrough size={16} /></ToolBtn>
+        <ToolBtn title="서식 지우기" onClick={clearFormat}><Eraser size={16} /></ToolBtn>
 
-        <div className="mx-1 w-px bg-zinc-200" />
+        <Divider />
 
-        <ToolButton
-          active={isImageAligned('left')}
-          onClick={() => handleAlign('left')}
-        >
-          좌
-        </ToolButton>
-        <ToolButton
-          active={isImageAligned('center')}
-          onClick={() => handleAlign('center')}
-        >
-          중
-        </ToolButton>
-        <ToolButton
-          active={isImageAligned('right')}
-          onClick={() => handleAlign('right')}
-        >
-          우
-        </ToolButton>
+        <ToolBtn title="제목 2" active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 size={16} /></ToolBtn>
+        <ToolBtn title="제목 3" active={editor.isActive('heading', { level: 3 })} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}><Heading3 size={16} /></ToolBtn>
 
-        <div className="mx-1 w-px bg-zinc-200" />
+        <Divider />
 
-        <ToolButton
-          active={editor.isActive('bulletList')}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-        >
-          UL
-        </ToolButton>
-        <ToolButton
-          active={editor.isActive('orderedList')}
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        >
-          OL
-        </ToolButton>
+        <ToolBtn title="왼쪽 정렬" active={isImageAligned('left')} onClick={() => handleAlign('left')}><AlignLeft size={16} /></ToolBtn>
+        <ToolBtn title="가운데 정렬" active={isImageAligned('center')} onClick={() => handleAlign('center')}><AlignCenter size={16} /></ToolBtn>
+        <ToolBtn title="오른쪽 정렬" active={isImageAligned('right')} onClick={() => handleAlign('right')}><AlignRight size={16} /></ToolBtn>
 
-        <div className="mx-1 w-px bg-zinc-200" />
+        <Divider />
 
-        <ToolButton
-          active={false}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          이미지
-        </ToolButton>
+        <ToolBtn title="글머리 목록" active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={16} /></ToolBtn>
+        <ToolBtn title="번호 목록" active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={16} /></ToolBtn>
+        <ToolBtn title="링크" active={editor.isActive('link')} onClick={handleLink}><Link2 size={16} /></ToolBtn>
+        <ToolBtn title="가로선" onClick={() => editor.chain().focus().setHorizontalRule().run()}><Minus size={16} /></ToolBtn>
 
-        {/* 전체 이미지 정렬 */}
-        <ToolButton
-          active={false}
-          onClick={() => handleAlignAllImages('center')}
-        >
-          전체 가운데
-        </ToolButton>
+        <Divider />
+
+        <ToolBtn title="이미지 삽입" onClick={() => fileInputRef.current?.click()}><ImageIcon size={16} /></ToolBtn>
+        <ToolBtn title="모든 이미지 가운데 정렬" onClick={() => handleAlignAllImages('center')}><Images size={16} /></ToolBtn>
 
         <input
           ref={fileInputRef}
@@ -311,15 +323,11 @@ export function TiptapEditor({
         />
 
         {uploading && (
-          <span className="ml-2 text-xs text-zinc-500">
-            업로드 중...
-          </span>
+          <span className="ml-2 text-xs text-zinc-300">업로드 중...</span>
         )}
 
         {imageSelected && (
-          <span className="ml-2 text-xs text-blue-500">
-            이미지 선택됨
-          </span>
+          <span className="ml-2 text-xs text-sky-300">이미지 선택됨</span>
         )}
       </div>
 
@@ -335,30 +343,5 @@ export function TiptapEditor({
         )}
       </div>
     </div>
-  )
-}
-
-function ToolButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={onClick}
-      className={`rounded px-2 py-1 text-xs font-medium transition ${
-        active
-          ? 'bg-zinc-900 text-white'
-          : 'text-zinc-600 hover:bg-zinc-200'
-      }`}
-    >
-      {children}
-    </button>
   )
 }

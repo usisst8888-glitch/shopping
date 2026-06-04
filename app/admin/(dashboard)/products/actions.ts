@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { generateSlug } from '@/lib/slug'
+import { copyCloudflareImage } from '@/lib/cloudflare-images'
 
 export type Product = {
   id: string
@@ -100,6 +101,7 @@ export async function getProducts(filter?: ProductsFilter): Promise<ProductsResu
 
   const { data: products, count, error } = await query
     .order('product_no', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
     .range(from, to)
 
   if (error || !products) return { products: [], total: 0, page, size }
@@ -137,11 +139,31 @@ export async function getAllCategoriesFlat() {
   const supabase = await createClient()
   const { data } = await supabase
     .from('categories')
-    .select('id, name, category_no, parent_id, level')
-    .order('level')
+    .select('id, name, category_no, parent_id, level, sort_order')
     .order('sort_order')
 
-  return data ?? []
+  const rows = data ?? []
+
+  // 부모별 자식 그룹핑 (sort_order 순서 유지)
+  const childrenMap = new Map<string | null, typeof rows>()
+  for (const cat of rows) {
+    const key = cat.parent_id ?? null
+    if (!childrenMap.has(key)) childrenMap.set(key, [])
+    childrenMap.get(key)!.push(cat)
+  }
+
+  // 깊이 우선으로 평탄화: 부모 → 자식들 → 다음 부모
+  const result: typeof rows = []
+  function walk(parentId: string | null) {
+    const children = childrenMap.get(parentId) ?? []
+    for (const cat of children) {
+      result.push(cat)
+      walk(cat.id)
+    }
+  }
+  walk(null)
+
+  return result
 }
 
 export async function uploadImage(formData: FormData) {
@@ -195,6 +217,15 @@ export async function createProduct(formData: FormData) {
     slug = `${slug}-${existing.length + 1}`
   }
 
+  // 다음 product_no = 현재 최댓값 + 1 (정렬상 맨 위로 노출되도록)
+  const { data: maxRow } = await supabase
+    .from('products')
+    .select('product_no')
+    .order('product_no', { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle()
+  const nextProductNo = ((maxRow?.product_no as number | null) ?? 0) + 1
+
   const { data: product, error } = await supabase
     .from('products')
     .insert({
@@ -208,6 +239,7 @@ export async function createProduct(formData: FormData) {
       category_nos: categoryNos,
       status,
       is_active: isActive,
+      product_no: nextProductNo,
     })
     .select('id')
     .single()
@@ -414,25 +446,95 @@ export async function duplicateProduct(id: string) {
 
   if (!original) return { error: '원본 상품을 찾을 수 없습니다.' }
 
-  const slug = generateSlug(original.name + '-복사')
+  // slug 중복 회피 — 같은 prefix 의 기존 slug 수 + 1 을 접미사로 추가
+  // (createProduct 와 동일 로직)
+  const baseSlug = generateSlug(original.name + '-복사')
+  let slug = baseSlug
+  const { data: existing } = await supabase
+    .from('products')
+    .select('slug')
+    .like('slug', `${baseSlug}%`)
+  if (existing && existing.length > 0) {
+    slug = `${baseSlug}-${existing.length + 1}`
+  }
+
+  // 복제본은 항상 맨 위(현재 최댓값 + 1)에 노출 — 다른 상품 product_no는 건드리지 않음
+  const { data: maxRow } = await supabase
+    .from('products')
+    .select('product_no')
+    .order('product_no', { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle()
+  const nextProductNo = ((maxRow?.product_no as number | null) ?? 0) + 1
+
+  // 이미지 복제: 같은 imageId를 공유하지 않도록 모든 Cloudflare 이미지를 새로 복사.
+  // 시간 단축을 위해 병렬 처리.
+  async function dupImage(url: string | null): Promise<string | null> {
+    if (!url) return null
+    const r = await copyCloudflareImage(url)
+    if (r.error) {
+      console.error('[duplicateProduct] image copy failed', { url, error: r.error })
+      // 실패 시 원본 그대로 두지 않고 빈 값으로 — 원본 이미지가 삭제 위험에 노출되지 않도록
+      return null
+    }
+    return r.url ?? null
+  }
+
+  // summary / description 본문 안의 imagedelivery.net URL을 모두 추출, 한 번에 병렬 복제 후 치환
+  async function dupBodyImages(body: string | null): Promise<string | null> {
+    if (!body) return body
+    const matches = body.match(/https:\/\/imagedelivery\.net\/[^"'\s)]+/g)
+    if (!matches || matches.length === 0) return body
+    const unique = [...new Set(matches)]
+    const results = await Promise.all(unique.map((src) => copyCloudflareImage(src)))
+    let next = body
+    for (let i = 0; i < unique.length; i++) {
+      const src = unique[i]
+      const r = results[i]
+      if (r.url && r.url !== src) {
+        next = next.split(src).join(r.url)
+      } else if (r.error) {
+        console.error('[duplicateProduct] body image copy failed', { src, error: r.error })
+      }
+    }
+    return next
+  }
+
+  const subSources = (original.sub_images ?? []) as string[]
+  const [newThumbnail, subDups, newSummary, newDescription] = await Promise.all([
+    dupImage(original.thumbnail_url),
+    Promise.all(subSources.map((s) => dupImage(s))),
+    dupBodyImages(original.summary),
+    dupBodyImages(original.description),
+  ])
+  const subImages = subDups.filter((u): u is string => !!u)
+
   const { data: newProduct, error } = await supabase
     .from('products')
     .insert({
       name: original.name + ' (복사)',
       slug,
-      summary: original.summary,
-      description: original.description,
+      summary: newSummary,
+      description: newDescription,
       price: original.price,
-      thumbnail_url: original.thumbnail_url,
-      sub_images: original.sub_images,
+      thumbnail_url: newThumbnail,
+      sub_images: subImages,
       category_nos: original.category_nos,
-      status: 'hidden',
-      is_active: false,
+      // 원본과 동일한 노출 상태로 복제
+      status: original.status,
+      is_active: original.is_active,
+      product_no: nextProductNo,
     })
     .select('id')
     .single()
 
-  if (error) return { error: '상품 복제 중 오류가 발생했습니다.' }
+  if (error) {
+    // 23505 = unique_violation (slug 중복 시)
+    if (error.code === '23505') {
+      return { error: '동일한 이름의 복사본이 너무 많습니다. 원본 이름을 변경 후 다시 시도해주세요.' }
+    }
+    return { error: `상품 복제 중 오류: ${error.message}` }
+  }
 
   // 카테고리 연결 복제
   const { data: relations } = await supabase
@@ -488,10 +590,28 @@ export async function deleteProduct(id: string) {
 
     const uniqueUrls = [...new Set(imageUrls)]
     if (uniqueUrls.length > 0) {
-      // fire-and-forget: 응답을 기다리지 않고 백그라운드에서 삭제
-      import('@/lib/cloudflare-images').then(({ deleteFromCloudflare }) => {
-        Promise.allSettled(uniqueUrls.map((url) => deleteFromCloudflare(url)))
-      }).catch(() => {})
+      // 같은 imageId를 다른 상품이 (썸네일/서브이미지/본문 어디에든) 쓰고 있는지 검사.
+      // 사용 중인 URL은 cloudflare 삭제 skip → 다른 상품의 이미지가 함께 깨지는 사고 방지.
+      const { data: stillUsed } = await supabase
+        .from('products')
+        .select('thumbnail_url, sub_images, summary, description')
+      const inUse = new Set<string>()
+      for (const row of stillUsed ?? []) {
+        if (row.thumbnail_url) inUse.add(row.thumbnail_url)
+        for (const u of (row.sub_images ?? []) as string[]) inUse.add(u)
+        for (const body of [row.summary, row.description]) {
+          if (!body) continue
+          const m = (body as string).match(/https:\/\/imagedelivery\.net\/[^"'\s)]+/g)
+          if (m) for (const u of m) inUse.add(u)
+        }
+      }
+      const toDelete = uniqueUrls.filter((u) => !inUse.has(u))
+      if (toDelete.length > 0) {
+        // fire-and-forget: 응답을 기다리지 않고 백그라운드에서 삭제
+        import('@/lib/cloudflare-images').then(({ deleteFromCloudflare }) => {
+          Promise.allSettled(toDelete.map((url) => deleteFromCloudflare(url)))
+        }).catch(() => {})
+      }
     }
   }
 

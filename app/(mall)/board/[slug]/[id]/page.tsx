@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PostActions } from './post-actions'
+import { PostContentLightbox } from '@/components/mall/post-content-lightbox'
+import { ShareButton } from '@/components/mall/share-button'
 
 export default async function PostPage({
   params,
@@ -13,7 +15,7 @@ export default async function PostPage({
 
   const { data: post } = await supabase
     .from('board_posts')
-    .select('*, boards!inner(name, slug)')
+    .select('*, boards!inner(name, slug, image_lightbox, show_share)')
     .eq('id', id)
     .single()
 
@@ -55,10 +57,14 @@ export default async function PostPage({
 
       <div className="border-t border-zinc-200 pt-8">
         {post.content ? (
-          <div
-            className="prose max-w-none text-zinc-700"
-            dangerouslySetInnerHTML={{ __html: post.content }}
-          />
+          post.boards?.image_lightbox !== false ? (
+            <PostContentLightbox html={post.content} />
+          ) : (
+            <div
+              className="prose max-w-none text-zinc-700"
+              dangerouslySetInnerHTML={{ __html: post.content }}
+            />
+          )
         ) : (
           <p className="text-zinc-400">내용이 없습니다.</p>
         )}
@@ -71,9 +77,14 @@ export default async function PostPage({
         >
           목록으로
         </Link>
-        {canEdit && (
-          <PostActions postId={id} boardSlug={slug} />
-        )}
+        <div className="flex gap-2">
+          {post.boards?.show_share && (
+            <ShareButton path={`/board/${slug}/${id}`} title={post.title} />
+          )}
+          {canEdit && (
+            <PostActions postId={id} boardSlug={slug} />
+          )}
+        </div>
       </div>
     </div>
   )

@@ -19,6 +19,7 @@ export async function GET(request: Request) {
     .overlaps('category_nos', categoryNos)
     .eq('is_active', true)
     .order('product_no', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 
   return NextResponse.json({

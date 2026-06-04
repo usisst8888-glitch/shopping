@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { login } from './actions'
+import { Spinner } from '@/components/spinner'
 
 export function LoginForm() {
   const [error, setError] = useState<string | null>(null)
@@ -18,7 +19,11 @@ export function LoginForm() {
   }
 
   return (
-    <form action={handleSubmit} className="space-y-4">
+    <form
+      action={handleSubmit}
+      aria-busy={loading}
+      className={`space-y-4 transition-opacity ${loading ? 'pointer-events-none opacity-60' : ''}`}
+    >
       {error && (
         <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
           {error}
@@ -51,8 +56,9 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-80"
       >
+        {loading && <Spinner />}
         {loading ? '로그인 중...' : '로그인'}
       </button>
       <p className="text-center text-sm text-zinc-500">

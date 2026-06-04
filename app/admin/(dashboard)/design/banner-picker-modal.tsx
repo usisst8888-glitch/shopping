@@ -18,6 +18,7 @@ export function BannerPickerModal({
   const [selectedIds, setSelectedIds] = useState<string[]>(section.bannerIds)
   const [display, setDisplay] = useState<'carousel' | 'grid'>(section.display)
   const [label, setLabel] = useState(section.label)
+  const [autoSeconds, setAutoSeconds] = useState(section.autoSeconds ?? 5)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
 
@@ -135,6 +136,29 @@ export function BannerPickerModal({
               </div>
             </div>
           </div>
+
+          {/* 캐러셀 자동 넘김 */}
+          {display === 'carousel' && (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">
+                자동 넘김 (초)
+              </label>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={autoSeconds || ''}
+                onChange={(e) => setAutoSeconds(Math.max(0, Number(e.target.value) || 0))}
+                className="w-40 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                placeholder="0 (자동 넘김 끔)"
+              />
+              <p className="mt-1 text-xs text-zinc-400">
+                {autoSeconds > 0
+                  ? `${autoSeconds}초마다 다음 배너로 넘어갑니다. (마우스 올리면 멈춤)`
+                  : '0이면 자동 넘김 끄기 (화살표·점으로만 이동).'}
+              </p>
+            </div>
+          )}
 
           {/* 선택된 배너 (순서 변경 가능) */}
           {selectedBanners.length > 0 && (
@@ -254,6 +278,7 @@ export function BannerPickerModal({
                 label: label.trim() || '배너',
                 display,
                 bannerIds: selectedIds,
+                autoSeconds,
               })
             }
             className="rounded-lg bg-zinc-900 px-6 py-2 text-sm font-medium text-white hover:bg-zinc-800"

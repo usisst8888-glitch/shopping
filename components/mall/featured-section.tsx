@@ -1,12 +1,34 @@
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { FeaturedProducts } from './featured-products'
 
 export async function FeaturedSection({
   categoryId,
   label,
+  subtitle,
+  moreAction = 'link',
+  showMoreButton = true,
+  display = 'grid',
+  perRow = 4,
+  rows = 2,
+  perRowMobile = 2,
+  rowsMobile,
+  totalItems,
+  sortBy = 'created',
+  autoSeconds = 0,
 }: {
   categoryId: string
   label: string
+  subtitle?: string
+  moreAction?: 'link' | 'expand'
+  showMoreButton?: boolean
+  display?: 'grid' | 'slider'
+  perRow?: number
+  rows?: number
+  perRowMobile?: number
+  rowsMobile?: number
+  totalItems?: number
+  sortBy?: 'created' | 'popular' | 'priceAsc' | 'priceDesc'
+  autoSeconds?: number
 }) {
   const supabase = await createClient()
 
@@ -42,56 +64,59 @@ export async function FeaturedSection({
 
   if (allNos.length === 0) return null
 
-  // category_nos 배열에 해당 번호가 포함된 상품 조회
-  const { data: products } = await supabase
+  // 진열 수: totalItems 우선, 없으면 perRow*rows 기본
+  const base = Math.max(1, totalItems ?? perRow * rows)
+  // 슬라이드/펼치기는 더 가져옴
+  const limit = display === 'slider' || moreAction === 'expand' ? Math.max(base, 40) : base
+
+  // 정렬
+  let query = supabase
     .from('products')
     .select('id, name, slug, price, thumbnail_url')
     .overlaps('category_nos', allNos)
     .eq('is_active', true)
-    .order('product_no', { ascending: false, nullsFirst: false })
-    .limit(8)
+
+  if (sortBy === 'popular') {
+    query = query
+      .order('view_count', { ascending: false })
+      .order('product_no', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+  } else if (sortBy === 'priceAsc') {
+    query = query.order('price', { ascending: true })
+  } else if (sortBy === 'priceDesc') {
+    query = query.order('price', { ascending: false })
+  } else {
+    // 등록순 (기본) — product_no 내림차순, 동률은 created_at 내림차순으로 복제본을 원본 위에 노출
+    query = query
+      .order('product_no', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+  }
+
+  const { data: products } = await query.limit(limit)
 
   if (!products || products.length === 0) return null
 
   return (
-    <section className="py-12">
+    <section className="pt-4 pb-12">
       <div className="mx-auto max-w-7xl px-4">
         <div className="mb-6">
-          <h2 className="w-full cursor-pointer text-[17px] font-bold text-zinc-900">{label}</h2>
+          <h2 className="w-full [&_p]:my-0" dangerouslySetInnerHTML={{ __html: label }} />
+          {subtitle && <div className="mt-1 [&_p]:my-0" dangerouslySetInnerHTML={{ __html: subtitle }} />}
         </div>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
-          {products.map((product) => (
-            <Link
-              key={product.id}
-              href={`/product/${product.slug || product.id}`}
-              className="group"
-            >
-              <div className="aspect-square overflow-hidden bg-zinc-100">
-                {product.thumbnail_url ? (
-                  <img
-                    src={product.thumbnail_url}
-                    alt={product.name}
-                    className="w-full object-cover transition group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-zinc-400">이미지 준비중</div>
-                )}
-              </div>
-              <div className="mt-3">
-                <p className="text-sm text-zinc-900 line-clamp-1">{product.name}</p>
-                <p className="mt-1 text-sm font-bold text-zinc-900">{product.price.toLocaleString()}원</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-        <div className="mt-8 text-center">
-          <Link
-            href={`/category/${self?.slug || categoryId}`}
-            className="inline-block rounded-[9px] border border-[#2c2c2c] px-5 py-2 text-[14px] text-[#2c2c2c]"
-          >
-            더보기
-          </Link>
-        </div>
+        <FeaturedProducts
+          products={products}
+          mode={moreAction}
+          showMoreButton={showMoreButton}
+          display={display}
+          perRow={perRow}
+          rows={rows}
+          perRowMobile={perRowMobile}
+          rowsMobile={rowsMobile ?? rows}
+          totalItems={base}
+          autoSeconds={autoSeconds}
+          categoryHref={`/category/${self?.slug || categoryId}`}
+          fromCategoryId={categoryId}
+        />
       </div>
     </section>
   )

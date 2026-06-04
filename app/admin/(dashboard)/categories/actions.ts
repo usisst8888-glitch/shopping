@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { generateSlug } from '@/lib/slug'
 
+export type CategoryPaginationMode = 'load_more' | 'pages'
+
 export type Category = {
   id: string
   category_no: string | null
@@ -13,6 +15,12 @@ export type Category = {
   sort_order: number
   image_url: string | null
   is_main: boolean
+  banner_url: string | null
+  banner_video_url: string | null
+  banner_show_overlay: boolean
+  pagination_mode: CategoryPaginationMode
+  products_per_row: number
+  products_rows: number
   created_at: string
   children?: Category[]
 }
@@ -68,6 +76,14 @@ export async function createCategory(formData: FormData) {
   const sortOrder = parseInt(formData.get('sort_order') as string) || 0
   const imageUrl = (formData.get('image_url') as string)?.trim() || null
   const isMain = formData.get('is_main') === 'true'
+  const bannerUrl = (formData.get('banner_url') as string)?.trim() || null
+  const bannerVideoUrl = (formData.get('banner_video_url') as string)?.trim() || null
+  const bannerShowOverlay = formData.get('banner_show_overlay') !== 'false'
+  const paginationModeRaw = (formData.get('pagination_mode') as string) || 'load_more'
+  const paginationMode: CategoryPaginationMode =
+    paginationModeRaw === 'pages' ? 'pages' : 'load_more'
+  const productsPerRow = Math.min(8, Math.max(1, parseInt(formData.get('products_per_row') as string) || 4))
+  const productsRows = Math.min(30, Math.max(1, parseInt(formData.get('products_rows') as string) || 10))
 
   let level = 1
   if (parentId) {
@@ -95,10 +111,6 @@ export async function createCategory(formData: FormData) {
     slug = `${slug}-${existingSlugs.length + 1}`
   }
 
-  const bannerUrlVal = (formData.get('banner_url') as string)?.trim() || null
-  const bannerTitleVal = (formData.get('banner_title') as string)?.trim() || null
-  const bannerVideoUrlVal = (formData.get('banner_video_url') as string)?.trim() || null
-
   const { error } = await supabase.from('categories').insert({
     name,
     slug,
@@ -108,9 +120,12 @@ export async function createCategory(formData: FormData) {
     sort_order: sortOrder,
     image_url: imageUrl,
     is_main: isMain,
-    banner_url: bannerUrlVal,
-    banner_title: bannerTitleVal,
-    banner_video_url: bannerVideoUrlVal,
+    banner_url: bannerUrl,
+    banner_video_url: bannerVideoUrl,
+    banner_show_overlay: bannerShowOverlay,
+    pagination_mode: paginationMode,
+    products_per_row: productsPerRow,
+    products_rows: productsRows,
   })
 
   if (error) {
@@ -118,6 +133,7 @@ export async function createCategory(formData: FormData) {
   }
 
   revalidatePath('/admin/categories')
+  revalidatePath('/category/[id]', 'page')
   return { success: true }
 }
 
@@ -130,6 +146,14 @@ export async function updateCategory(formData: FormData) {
   const sortOrder = parseInt(formData.get('sort_order') as string) || 0
   const imageUrl = (formData.get('image_url') as string)?.trim() || null
   const isMain = formData.get('is_main') === 'true'
+  const bannerUrl = (formData.get('banner_url') as string)?.trim() || null
+  const bannerVideoUrl = (formData.get('banner_video_url') as string)?.trim() || null
+  const bannerShowOverlay = formData.get('banner_show_overlay') !== 'false'
+  const paginationModeRaw = (formData.get('pagination_mode') as string) || 'load_more'
+  const paginationMode: CategoryPaginationMode =
+    paginationModeRaw === 'pages' ? 'pages' : 'load_more'
+  const productsPerRow = Math.min(8, Math.max(1, parseInt(formData.get('products_per_row') as string) || 4))
+  const productsRows = Math.min(30, Math.max(1, parseInt(formData.get('products_rows') as string) || 10))
 
   // slug 업데이트
   const { data: current } = await supabase
@@ -151,13 +175,22 @@ export async function updateCategory(formData: FormData) {
     }
   }
 
-  const bannerUrlVal = (formData.get('banner_url') as string)?.trim() || null
-  const bannerTitleVal = (formData.get('banner_title') as string)?.trim() || null
-  const bannerVideoUrlVal = (formData.get('banner_video_url') as string)?.trim() || null
-
   const { error } = await supabase
     .from('categories')
-    .update({ name, slug, category_no: categoryNo, sort_order: sortOrder, image_url: imageUrl, is_main: isMain, banner_url: bannerUrlVal, banner_title: bannerTitleVal, banner_video_url: bannerVideoUrlVal })
+    .update({
+      name,
+      slug,
+      category_no: categoryNo,
+      sort_order: sortOrder,
+      image_url: imageUrl,
+      is_main: isMain,
+      banner_url: bannerUrl,
+      banner_video_url: bannerVideoUrl,
+      banner_show_overlay: bannerShowOverlay,
+      pagination_mode: paginationMode,
+      products_per_row: productsPerRow,
+      products_rows: productsRows,
+    })
     .eq('id', id)
 
   if (error) {
@@ -165,6 +198,7 @@ export async function updateCategory(formData: FormData) {
   }
 
   revalidatePath('/admin/categories')
+  revalidatePath('/category/[id]', 'page')
   return { success: true }
 }
 

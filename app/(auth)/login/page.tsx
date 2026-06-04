@@ -4,7 +4,7 @@ export const metadata = { title: '로그인' }
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+    <div className="flex min-h-[calc(100vh-200px)] items-center justify-center bg-zinc-50 px-4 py-10">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
         <h1 className="mb-2 text-center text-2xl font-bold text-zinc-900">
           로그인

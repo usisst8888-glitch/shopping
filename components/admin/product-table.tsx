@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState, useTransition } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { updateProductStatus, duplicateProduct } from '@/app/admin/(dashboard)/products/actions'
+import { Spinner } from '@/components/spinner'
 
 type ProductStatus = 'active' | 'soldout' | 'hidden'
 
@@ -41,6 +43,24 @@ export function ProductTable({
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [busy, setBusy] = useState<null | { label: string }>(null)
+  const [awaitingRefresh, setAwaitingRefresh] = useState(false)
+  const [isPending, startTransition] = useTransition()
+
+  // router.refresh() 가 완료되어 목록이 다시 렌더된 뒤에 로딩창을 닫음
+  useEffect(() => {
+    if (awaitingRefresh && !isPending) {
+      setBusy(null)
+      setAwaitingRefresh(false)
+    }
+  }, [awaitingRefresh, isPending])
+
+  function refreshAndClose() {
+    setAwaitingRefresh(true)
+    startTransition(() => {
+      router.refresh()
+    })
+  }
 
   const allSelected = products.length > 0 && selected.size === products.length
   const someSelected = selected.size > 0
@@ -60,20 +80,20 @@ export function ProductTable({
     setSelected(next)
   }
 
-  function handleBulkDelete() {
+  async function handleBulkDelete() {
     const ids = [...selected]
     setSelected(new Set())
     setShowDeleteModal(false)
+    setBusy({ label: ids.length > 1 ? `${ids.length}개 상품 삭제 중...` : '상품 삭제 중...' })
 
-    // API로 삭제 요청 → 백엔드에서 독립적으로 처리 (페이지 이동해도 계속 진행)
-    fetch('/api/products/delete', {
+    await fetch('/api/products/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids }),
       keepalive: true,
     }).catch(() => {})
-
-    router.refresh()
+    // 목록이 다시 렌더된 뒤에 오버레이가 닫히도록
+    refreshAndClose()
   }
 
   return (
@@ -90,11 +110,13 @@ export function ProductTable({
               <button
                 key={s}
                 onClick={async () => {
-                  for (const id of selected) {
+                  const ids = [...selected]
+                  setBusy({ label: `${ids.length}개 상품 상태 변경 중...` })
+                  for (const id of ids) {
                     await updateProductStatus(id, s)
                   }
                   setSelected(new Set())
-                  router.refresh()
+                  refreshAndClose()
                 }}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
                   s === 'active' ? 'bg-emerald-600 text-white hover:bg-emerald-700'
@@ -107,11 +129,18 @@ export function ProductTable({
             ))}
             <button
               onClick={async () => {
-                for (const id of selected) {
-                  await duplicateProduct(id)
+                const ids = [...selected]
+                setBusy({ label: ids.length > 1 ? `${ids.length}개 상품 복제 중...` : '상품 복제 중...' })
+                const errors: string[] = []
+                for (const id of ids) {
+                  const r = await duplicateProduct(id)
+                  if (r?.error) errors.push(r.error)
                 }
                 setSelected(new Set())
-                router.refresh()
+                if (errors.length > 0) {
+                  alert(`일부 상품 복제 실패\n\n${[...new Set(errors)].join('\n')}`)
+                }
+                refreshAndClose()
               }}
               className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
             >
@@ -178,7 +207,10 @@ export function ProductTable({
                       {product.product_no ?? '-'}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
+                      <Link
+                        href={`/admin/products/${product.id}/edit`}
+                        className="group/name flex items-center gap-3"
+                      >
                         {product.thumbnail_url ? (
                           <img
                             src={product.thumbnail_url}
@@ -190,8 +222,10 @@ export function ProductTable({
                             없음
                           </div>
                         )}
-                        <p className="font-medium text-zinc-900 line-clamp-1">{product.name}</p>
-                      </div>
+                        <p className="font-medium text-zinc-900 line-clamp-1 group-hover/name:underline">
+                          {product.name}
+                        </p>
+                      </Link>
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-zinc-900 whitespace-nowrap">
                       {product.price.toLocaleString()}원
@@ -240,17 +274,34 @@ export function ProductTable({
                       <div className="flex items-center justify-center gap-1.5">
                         <Link
                           href={`/admin/products/${product.id}/edit`}
-                          className="rounded-md bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-600 transition hover:bg-blue-100"
+                          className="cursor-pointer rounded-md bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-600 transition hover:bg-blue-100"
                         >
                           수정
                         </Link>
                         <Link
                           href={`/product/${product.slug || product.id}`}
                           target="_blank"
-                          className="rounded-md bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-600 transition hover:bg-amber-100"
+                          className="cursor-pointer rounded-md bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-600 transition hover:bg-amber-100"
                         >
                           보기
                         </Link>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setBusy({ label: '상품 복제 중...' })
+                            const r = await duplicateProduct(product.id)
+                            if (r?.error) {
+                              alert(r.error)
+                              setBusy(null)
+                              return
+                            }
+                            refreshAndClose()
+                          }}
+                          onMouseDown={(e) => e.preventDefault()}
+                          className="cursor-pointer rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-600 transition hover:bg-emerald-100"
+                        >
+                          복제
+                        </button>
                         <button
                           type="button"
                           onClick={() => {
@@ -258,7 +309,7 @@ export function ProductTable({
                             setShowDeleteModal(true)
                           }}
                           onMouseDown={(e) => e.preventDefault()}
-                          className="rounded-md bg-red-50 px-2.5 py-1 text-[11px] font-medium text-red-500 transition hover:bg-red-100"
+                          className="cursor-pointer rounded-md bg-red-50 px-2.5 py-1 text-[11px] font-medium text-red-500 transition hover:bg-red-100"
                         >
                           삭제
                         </button>
@@ -310,6 +361,22 @@ export function ProductTable({
           </div>
         </div>
       )}
+
+      {/* 전체 화면 로딩 오버레이 (복제/삭제/상태 변경 진행 중) */}
+      {busy && typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <div className="flex flex-col items-center gap-3 rounded-2xl bg-zinc-900/80 px-8 py-6 text-white shadow-2xl ring-1 ring-white/10">
+              <Spinner className="h-8 w-8" />
+              <p className="text-sm font-medium">{busy.label}</p>
+            </div>
+          </div>,
+          document.body,
+        )}
     </>
   )
 }

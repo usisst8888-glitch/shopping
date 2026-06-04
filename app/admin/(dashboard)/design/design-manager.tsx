@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { SiteDesign, NavItem } from '@/lib/types/design'
 import { upsertDesign } from './actions'
+import { TiptapEditor } from '@/components/admin/tiptap-editor'
 
 type CategoryOption = {
   id: string
@@ -64,6 +65,9 @@ export function DesignManager({
     if (input) input.value = ''
   }
 
+  // 푸터 추가사항 (리치 텍스트)
+  const [footerExtra, setFooterExtra] = useState<string>(design?.footer_extra ?? '')
+
   // 네비게이션 항목
   const [navItems, setNavItems] = useState<NavItem[]>(
     design?.nav_items ?? [
@@ -73,12 +77,6 @@ export function DesignManager({
       { label: '카테고리', href: '/' },
     ]
   )
-
-  // 브랜드 목록
-  const [brandsList, setBrandsList] = useState<string[]>(
-    design?.brands_list ?? []
-  )
-  const [newBrand, setNewBrand] = useState('')
 
   // 네비게이션 드래그 앤 드롭
   const [navDragIndex, setNavDragIndex] = useState<number | null>(null)
@@ -108,18 +106,6 @@ export function DesignManager({
     setNavItems(updated)
   }
 
-  function addBrand() {
-    const trimmed = newBrand.trim()
-    if (trimmed && !brandsList.includes(trimmed)) {
-      setBrandsList([...brandsList, trimmed])
-      setNewBrand('')
-    }
-  }
-
-  function removeBrand(index: number) {
-    setBrandsList(brandsList.filter((_, i) => i !== index))
-  }
-
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
@@ -128,9 +114,9 @@ export function DesignManager({
 
     const formData = new FormData(e.currentTarget)
     formData.set('nav_items', JSON.stringify(navItems.filter((n) => n.label.trim())))
-    formData.set('brands_list', JSON.stringify(brandsList))
     formData.set('display_category_ids', JSON.stringify(displayCategoryIds))
     formData.set('featured_category_id', featuredCategoryId)
+    formData.set('footer_extra', footerExtra)
     if (removeLogo) formData.set('remove_logo', 'true')
 
     const result = await upsertDesign(siteId, formData)
@@ -203,112 +189,6 @@ export function DesignManager({
               className="hidden"
             />
             <p className="mt-1 text-xs text-zinc-400">PNG, SVG 권장 (투명 배경)</p>
-          </div>
-        </div>
-      </div>
-
-      {/* 히어로 기본 설정 */}
-      <div className="rounded-xl bg-white p-6 shadow-sm">
-        <h3 className="mb-4 text-lg font-semibold text-zinc-900">
-          히어로 기본 설정
-        </h3>
-        <p className="mb-4 text-sm text-zinc-500">
-          배너가 등록되어 있으면 배너가 우선 표시됩니다.
-        </p>
-
-        <div className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label
-                htmlFor="hero_title"
-                className="mb-1 block text-sm font-medium text-zinc-700"
-              >
-                제목
-              </label>
-              <input
-                id="hero_title"
-                name="hero_title"
-                type="text"
-                defaultValue={design?.hero_title ?? ''}
-                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                placeholder="최상급 명품 레플리카"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="hero_bg_color"
-                className="mb-1 block text-sm font-medium text-zinc-700"
-              >
-                배경색
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  name="hero_bg_color"
-                  defaultValue={design?.hero_bg_color ?? '#18181b'}
-                  className="h-[42px] w-[42px] cursor-pointer rounded-lg border border-zinc-300"
-                />
-                <input
-                  id="hero_bg_color_text"
-                  type="text"
-                  defaultValue={design?.hero_bg_color ?? '#18181b'}
-                  className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                  readOnly
-                />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label
-              htmlFor="hero_subtitle"
-              className="mb-1 block text-sm font-medium text-zinc-700"
-            >
-              부제목
-            </label>
-            <input
-              id="hero_subtitle"
-              name="hero_subtitle"
-              type="text"
-              defaultValue={design?.hero_subtitle ?? ''}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-              placeholder="합리적인 가격으로 만나는 프리미엄 품질."
-            />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label
-                htmlFor="hero_cta_text"
-                className="mb-1 block text-sm font-medium text-zinc-700"
-              >
-                버튼 텍스트
-              </label>
-              <input
-                id="hero_cta_text"
-                name="hero_cta_text"
-                type="text"
-                defaultValue={design?.hero_cta_text ?? '쇼핑하기'}
-                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                placeholder="쇼핑하기"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="hero_cta_link"
-                className="mb-1 block text-sm font-medium text-zinc-700"
-              >
-                버튼 링크
-              </label>
-              <input
-                id="hero_cta_link"
-                name="hero_cta_link"
-                type="text"
-                defaultValue={design?.hero_cta_link ?? '/'}
-                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                placeholder="/"
-              />
-            </div>
           </div>
         </div>
       </div>
@@ -433,22 +313,6 @@ export function DesignManager({
         <h3 className="mb-4 text-lg font-semibold text-zinc-900">푸터 정보</h3>
 
         <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="footer_phone"
-              className="mb-1 block text-sm font-medium text-zinc-700"
-            >
-              전화번호
-            </label>
-            <input
-              id="footer_phone"
-              name="footer_phone"
-              type="text"
-              defaultValue={design?.footer_phone ?? ''}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-              placeholder="010-0000-0000"
-            />
-          </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label
@@ -483,56 +347,44 @@ export function DesignManager({
               />
             </div>
           </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-zinc-700">
+              추가사항
+            </label>
+            <p className="mb-2 text-xs text-zinc-500">
+              폰트 크기, 색상, 정렬 등 자유롭게 편집할 수 있습니다.
+            </p>
+            <TiptapEditor
+              content={footerExtra}
+              onChange={setFooterExtra}
+              minHeight="180px"
+            />
+          </div>
         </div>
       </div>
 
-      {/* 브랜드 목록 */}
+      {/* 플로팅 상담 버튼 */}
       <div className="rounded-xl bg-white p-6 shadow-sm">
-        <h3 className="mb-4 text-lg font-semibold text-zinc-900">
-          브랜드 목록
-        </h3>
+        <h3 className="mb-1 text-lg font-semibold text-zinc-900">플로팅 상담 버튼</h3>
         <p className="mb-4 text-sm text-zinc-500">
-          홈페이지 브랜드 섹션에 표시할 브랜드를 관리합니다.
+          화면 우측 하단에 고정되는 카카오톡 상담 버튼의 링크를 설정합니다. 비워두면 임시 링크가 사용됩니다.
         </p>
-
-        <div className="mb-3 flex flex-wrap gap-2">
-          {brandsList.map((brand, index) => (
-            <span
-              key={index}
-              className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-3 py-1 text-sm text-zinc-700"
-            >
-              {brand}
-              <button
-                type="button"
-                onClick={() => removeBrand(index)}
-                className="ml-1 text-zinc-400 hover:text-red-500"
-              >
-                &times;
-              </button>
-            </span>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newBrand}
-            onChange={(e) => setNewBrand(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                addBrand()
-              }
-            }}
-            className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-            placeholder="브랜드명 입력 후 Enter"
-          />
-          <button
-            type="button"
-            onClick={addBrand}
-            className="rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200"
+        <div>
+          <label
+            htmlFor="kakao_link"
+            className="mb-1 block text-sm font-medium text-zinc-700"
           >
-            추가
-          </button>
+            카카오톡 상담 링크
+          </label>
+          <input
+            id="kakao_link"
+            name="kakao_link"
+            type="text"
+            defaultValue={design?.kakao_link ?? ''}
+            className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+            placeholder="https://pf.kakao.com/_xxxxx"
+          />
         </div>
       </div>
 

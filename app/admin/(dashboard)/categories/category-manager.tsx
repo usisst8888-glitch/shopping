@@ -78,8 +78,8 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
         </div>
       </div>
 
-      {/* 우측: 폼 */}
-      <div className="lg:col-span-2">
+      {/* 우측: 폼 — sticky + 내부 스크롤 (화면이 작아도 폼 끝까지 접근 가능) */}
+      <div className="lg:col-span-2 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:[scrollbar-gutter:stable]">
         {formState.mode === 'idle' ? (
           <div className="rounded-xl bg-white p-6 shadow-sm">
             <p className="text-center text-sm text-zinc-400">

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { formatProductPrice } from '@/lib/format-price'
 
 export async function CategoryProductsSection({
   categoryIds,
@@ -94,7 +95,7 @@ export async function CategoryProductsSection({
                         {product.name}
                       </p>
                       <p className="mt-2 text-sm font-bold text-zinc-900">
-                        {product.price.toLocaleString()}원
+                        {formatProductPrice(product.price)}
                       </p>
                     </div>
                   </Link>

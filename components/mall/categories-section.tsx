@@ -12,13 +12,23 @@ const gradients = [
 
 export function CategoriesSection({
   cards,
+  label,
+  subtitle,
 }: {
   cards?: CategoryCard[]
+  label?: string
+  subtitle?: string
 }) {
   if (!cards || cards.length === 0) return null
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-16">
+      {(label || subtitle) && (
+        <div className="mb-8 text-center">
+          {label && <h2 className="text-2xl font-bold tracking-wider text-zinc-900">{label}</h2>}
+          {subtitle && <p className="mt-2 text-sm text-zinc-500">{subtitle}</p>}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {cards.map((card, i) => (
           <Link
